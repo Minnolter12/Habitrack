@@ -1,13 +1,16 @@
 package com.minnolter.habitrack.ui.screens.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -17,6 +20,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,14 +50,7 @@ import com.minnolter.habitrack.ui.screens.home.components.ReorderableHabitList
 
 /**
  * Stateful entry point for the Home screen: owns the [HomeViewModel]
- * subscription, the quick-log sheet's transient visibility, and the
- * in-progress reorder draft (Section 24), and delegates all rendering to the
- * stateless [HomeScreen].
- *
- * The pending reorder result lives here — not in [HomeViewModel] — because
- * it's a discardable UI draft: only a Save actually calls back into the
- * ViewModel (via [HomeViewModel.exitReorderMode]) and touches Room, exactly
- * mirroring how [ReorderableHabitList] itself never talks to a repository.
+ * subscription, transient quick-log visibility, and reorder draft.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,16 +100,8 @@ fun HomeRoute(
 }
 
 /**
- * Pure rendering of [HomeUiState] (Sections 8–10, 12, 24, 30, 36): a top app
- * bar with Habitract's wordmark and Settings/Reorder actions, the dashboard,
- * a [LazyColumn] of [HabitCard]s (Section 8 specifically calls for a
- * `LazyColumn`, not a grid), and an Extended FAB for adding a habit — or,
- * while [isReorderMode] is true, the same top bar switched to Cancel/Save
- * actions and the list swapped for [ReorderableHabitList] (Section 24). The
- * FAB and Settings action are both hidden during reorder mode: adding a habit
- * or navigating away mid-drag would either invalidate the in-progress draft
- * or abandon it silently, so both paths are closed off until the user
- * explicitly saves or cancels.
+ * Pure rendering of [HomeUiState]: a top app bar with Habitrack's wordmark and subtitle, 
+ * cosmic background gradient, habit cards with glassmorphic depth, and a quote footer.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,16 +119,41 @@ fun HomeScreen(
     onReorderCancelClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val cosmicBackground = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF16131D),
+            Color(0xFF0F0C15),
+            Color(0xFF08060B)
+        )
+    )
+
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.background(cosmicBackground),
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = if (isReorderMode) "Reorder Habits" else "Habitrack",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    if (isReorderMode) {
+                        Text(
+                            text = "Reorder Habits",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    } else {
+                        Column {
+                            Text(
+                                text = "Habitrack",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "Time shapes you.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.55f)
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     if (isReorderMode) {
@@ -166,7 +182,7 @@ fun HomeScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.Transparent
                 )
             )
         },
@@ -175,7 +191,14 @@ fun HomeScreen(
                 ExtendedFloatingActionButton(
                     onClick = onAddHabitClick,
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    text = { Text("Add Habit") }
+                    text = { Text("Add Habit", fontWeight = FontWeight.SemiBold) },
+                    shape = RoundedCornerShape(percent = 50),
+                    containerColor = Color(0x667C4DFF),
+                    contentColor = Color.White,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 8.dp,
+                        pressedElevation = 12.dp
+                    )
                 )
             }
         }
@@ -253,8 +276,7 @@ private fun LoadingState(modifier: Modifier = Modifier) {
 }
 
 /**
- * The Section 36 empty state, shown only once loading has finished and there
- * genuinely are no habits — never a generic "no data" placeholder.
+ * Empty state shown only once loading has finished and there are no habits.
  */
 @Composable
 private fun EmptyHomeState(
