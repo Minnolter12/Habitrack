@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,10 +23,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -48,10 +52,6 @@ import com.minnolter.habitrack.ui.screens.home.components.DashboardSummaryHeader
 import com.minnolter.habitrack.ui.screens.home.components.ReorderEntry
 import com.minnolter.habitrack.ui.screens.home.components.ReorderableHabitList
 
-/**
- * Stateful entry point for the Home screen: owns the [HomeViewModel]
- * subscription, transient quick-log visibility, and reorder draft.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeRoute(
@@ -99,10 +99,6 @@ fun HomeRoute(
     }
 }
 
-/**
- * Pure rendering of [HomeUiState]: a top app bar with Habitrack's wordmark and subtitle, 
- * cosmic background gradient, habit cards with glassmorphic depth, and a quote footer.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -131,60 +127,70 @@ fun HomeScreen(
         modifier = modifier.background(cosmicBackground),
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = {
-                    if (isReorderMode) {
-                        Text(
-                            text = "Reorder Habits",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    } else {
-                        Column {
+            Column {
+                TopAppBar(
+                    title = {
+                        if (isReorderMode) {
                             Text(
-                                text = "Habitrack",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
+                                text = "Reorder Habits",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
-                            Text(
-                                text = "Time shapes you.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.55f)
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    if (isReorderMode) {
-                        IconButton(onClick = onReorderCancelClick) {
-                            Icon(Icons.Filled.Close, contentDescription = "Cancel reordering")
-                        }
-                    }
-                },
-                actions = {
-                    if (isReorderMode) {
-                        IconButton(onClick = onReorderSaveClick) {
-                            Icon(Icons.Filled.Check, contentDescription = "Save new order")
-                        }
-                    } else {
-                        if (!uiState.isEmpty && uiState.habits.size > 1) {
-                            IconButton(onClick = onReorderModeClick) {
-                                Icon(Icons.Filled.Reorder, contentDescription = "Reorder habits")
+                        } else {
+                            Column {
+                                Text(
+                                    text = "Habitrack",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Time shapes you.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.55f)
+                                )
                             }
                         }
-                        IconButton(onClick = onSettingsClick) {
-                            Icon(
-                                imageVector = Icons.Filled.Settings,
-                                contentDescription = "Settings"
-                            )
+                    },
+                    navigationIcon = {
+                        if (isReorderMode) {
+                            IconButton(onClick = onReorderCancelClick) {
+                                Icon(Icons.Filled.Close, contentDescription = "Cancel reordering")
+                            }
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    },
+                    actions = {
+                        if (isReorderMode) {
+                            IconButton(onClick = onReorderSaveClick) {
+                                Icon(Icons.Filled.Check, contentDescription = "Save new order")
+                            }
+                        } else {
+                            if (!uiState.isEmpty && uiState.habits.size > 1) {
+                                IconButton(onClick = onReorderModeClick) {
+                                    Icon(Icons.Filled.Reorder, contentDescription = "Reorder habits")
+                                }
+                            }
+                            IconButton(onClick = onSettingsClick) {
+                                Icon(
+                                    imageVector = Icons.Filled.Settings,
+                                    contentDescription = "Settings"
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
                 )
-            )
+
+                // Full width horizontal divider extending between top bar & hours
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = Color.White.copy(alpha = 0.12f),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         floatingActionButton = {
             if (!uiState.isEmpty && !isReorderMode) {
@@ -198,7 +204,8 @@ fun HomeScreen(
                     elevation = FloatingActionButtonDefaults.elevation(
                         defaultElevation = 8.dp,
                         pressedElevation = 12.dp
-                    )
+                    ),
+                    modifier = Modifier.padding(end = 12.dp, bottom = 20.dp)
                 )
             }
         }
@@ -246,12 +253,20 @@ private fun HomeContent(
         contentPadding = PaddingValues(bottom = 96.dp)
     ) {
         item(key = "dashboard_header") {
-            DashboardSummaryHeader(
-                selectedRange = uiState.selectedTimeRange,
-                totalMinutes = uiState.dashboardTotalMinutes,
-                habitCount = uiState.habits.size,
-                onRangeSelected = onTimeRangeSelected
-            )
+            // Slightly lighter background container for dashboard section to feel distinct
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                color = Color(0xFF1E1B28)
+            ) {
+                DashboardSummaryHeader(
+                    selectedRange = uiState.selectedTimeRange,
+                    totalMinutes = uiState.dashboardTotalMinutes,
+                    habitCount = uiState.habits.size,
+                    onRangeSelected = onTimeRangeSelected
+                )
+            }
         }
 
         items(items = uiState.habits, key = { it.habit.id }) { summary ->
@@ -275,9 +290,6 @@ private fun LoadingState(modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * Empty state shown only once loading has finished and there are no habits.
- */
 @Composable
 private fun EmptyHomeState(
     onAddHabitClick: () -> Unit,
