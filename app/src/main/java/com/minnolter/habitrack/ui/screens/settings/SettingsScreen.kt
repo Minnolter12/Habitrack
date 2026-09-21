@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
@@ -23,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -38,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,11 +49,6 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-/**
- * Stateful entry point: owns the [SettingsViewModel] subscription, the SAF
- * export/import launchers, and the restart-required dialog after a
- * successful restore.
- */
 @Composable
 fun SettingsRoute(
     viewModel: SettingsViewModel,
@@ -80,7 +74,7 @@ fun SettingsRoute(
         val message = when (val state = backupState) {
             is BackupOperationState.ExportSucceeded -> state.message
             is BackupOperationState.Failed -> state.message
-            is BackupOperationState.ImportSucceeded -> null // handled by the restart dialog instead
+            is BackupOperationState.ImportSucceeded -> null
             BackupOperationState.Idle, BackupOperationState.InProgress -> null
         }
         if (message != null) {
@@ -94,7 +88,6 @@ fun SettingsRoute(
         backupState = backupState,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
-        onThemeModeSelected = viewModel::setThemeMode,
         onReducedMotionChanged = viewModel::setReducedMotionForced,
         onFeedbackChanged = viewModel::setFeedbackEnabled,
         onReorderHabitsClick = onReorderHabitsClick,
@@ -115,7 +108,6 @@ fun SettingsScreen(
     backupState: BackupOperationState,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
-    onThemeModeSelected: (ThemeMode) -> Unit,
     onReducedMotionChanged: (Boolean) -> Unit,
     onFeedbackChanged: (Boolean) -> Unit,
     onReorderHabitsClick: () -> Unit,
@@ -129,15 +121,16 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.SemiBold) },
+                title = { Text("Settings", fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -158,26 +151,11 @@ fun SettingsScreen(
             }
 
             item { HorizontalDivider() }
-            item { SectionHeader("Appearance") }
-            items(ThemeMode.entries) { mode ->
-                ListItem(
-                    headlineContent = { Text(mode.label()) },
-                    leadingContent = {
-                        RadioButton(
-                            selected = settings.themeMode == mode,
-                            onClick = { onThemeModeSelected(mode) }
-                        )
-                    },
-                    modifier = Modifier.clickable { onThemeModeSelected(mode) }
-                )
-            }
-
-            item { HorizontalDivider() }
             item { SectionHeader("Accessibility") }
             item {
                 ListItem(
                     headlineContent = { Text("Reduce motion") },
-                    supportingContent = { Text("Calms the jelly animation, in addition to your system setting") },
+                    supportingContent = { Text("Calms the jelly animation & 3D tilt, in addition to your system setting") },
                     trailingContent = {
                         Switch(
                             checked = settings.reducedMotionForced,
@@ -237,7 +215,7 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = onDismissRestartDialog,
             title = { Text("Restore complete") },
-            text = { Text("Habitract needs to restart to load the restored data.") },
+            text = { Text("Habitrack needs to restart to load the restored data.") },
             confirmButton = { TextButton(onClick = onRestartNow) { Text("Restart now") } },
             dismissButton = { TextButton(onClick = onDismissRestartDialog) { Text("Later") } }
         )
@@ -249,16 +227,10 @@ private fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        color = Color(0xFF00E5FF),
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
     )
-}
-
-private fun ThemeMode.label(): String = when (this) {
-    ThemeMode.SYSTEM -> "System default"
-    ThemeMode.LIGHT -> "Light"
-    ThemeMode.DARK -> "Dark"
 }
 
 private fun defaultBackupFileName(): String {
