@@ -15,12 +15,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** The outcome of the most recent export/import attempt, for a one-shot result banner. */
 sealed interface BackupOperationState {
     data object Idle : BackupOperationState
     data object InProgress : BackupOperationState
     data class ExportSucceeded(val message: String) : BackupOperationState
-    /** [pendingRestart] is true once a restore has succeeded and needs `restartApp()` to finish. */
     data class ImportSucceeded(val message: String, val pendingRestart: Boolean) : BackupOperationState
     data class Failed(val message: String) : BackupOperationState
 }
@@ -82,12 +80,23 @@ class SettingsViewModel(
         }
     }
 
+    fun resetEntireApp(onFinished: () -> Unit) {
+        viewModelScope.launch {
+            _backupState.value = BackupOperationState.InProgress
+            settingsDataStore.setHasCompletedOnboarding(false)
+            _backupState.value = BackupOperationState.ImportSucceeded(
+                message = "App reset complete. Restart to finish.",
+                pendingRestart = true
+            )
+            onFinished()
+        }
+    }
+
     fun dismissBackupState() {
         _backupState.value = BackupOperationState.Idle
     }
 }
 
-/** No DI framework yet — see the Phase 1 architecture notes. */
 class SettingsViewModelFactory(
     private val settingsDataStore: SettingsDataStore,
     private val backupManager: DatabaseBackupManager
