@@ -1,5 +1,6 @@
 package com.minnolter.habitrack.ui.screens.detail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,6 +23,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,14 +35,18 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -60,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,8 +76,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.minnolter.habitrack.domain.model.ProgressionStage
 import com.minnolter.habitrack.domain.model.TimeRange
+import com.minnolter.habitrack.ui.components.DeleteHabitConfirmationSheet
 import com.minnolter.habitrack.ui.components.JellyProgressCanvas
 import com.minnolter.habitrack.util.formatExactDuration
+import com.minnolter.habitrack.util.getDynamicHabitColor
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -76,11 +87,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
-/**
- * Stateful entry point: owns the [HabitDetailViewModel] subscription and
- * navigates back automatically once the habit is deleted. All rendering is
- * delegated to the stateless [HabitDetailScreen].
- */
 @Composable
 fun HabitDetailRoute(
     viewModel: HabitDetailViewModel,
@@ -116,13 +122,6 @@ fun HabitDetailRoute(
     )
 }
 
-/**
- * Pure rendering of [HabitDetailUiState] (Sections 25–28): a top bar with
- * back navigation and an overflow menu, a hero header contrasting the
- * nonlinear jelly fill against the honest linear percentage (Section 20), a
- * distribution chart for the selected breakdown filter, and the session
- * history list.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitDetailScreen(
@@ -141,27 +140,42 @@ fun HabitDetailScreen(
     modifier: Modifier = Modifier
 ) {
     var overflowMenuExpanded by remember { mutableStateOf(false) }
-    val accentColor = uiState.stage.toColor()
+    
+    val accentColor = getDynamicHabitColor(
+        baseStage = uiState.stage,
+        lifetimeMinutes = uiState.lifetimeMinutes,
+        customColorHex = uiState.accentColorHex
+    )
+
+    val cosmicBackground = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF16131D),
+            Color(0xFF0F0C15),
+            Color(0xFF08060B)
+        )
+    )
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.background(cosmicBackground),
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = uiState.habitName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { overflowMenuExpanded = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options", tint = Color.White)
                     }
                     DropdownMenu(
                         expanded = overflowMenuExpanded,
@@ -177,7 +191,7 @@ fun HabitDetailScreen(
                         )
                         DropdownMenuItem(
                             text = { Text("Delete") },
-                            leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                            leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFFF5252)) },
                             onClick = {
                                 overflowMenuExpanded = false
                                 onDeleteHabitClick()
@@ -185,9 +199,7 @@ fun HabitDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
         floatingActionButton = {
@@ -195,7 +207,10 @@ fun HabitDetailScreen(
                 ExtendedFloatingActionButton(
                     onClick = onAddSessionClick,
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    text = { Text("Log Session") }
+                    text = { Text("Log Session", fontWeight = FontWeight.Bold) },
+                    containerColor = Color(0xFF7C4DFF),
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(percent = 50)
                 )
             }
         }
@@ -207,7 +222,7 @@ fun HabitDetailScreen(
                     .fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = Color(0xFF00E5FF))
             }
         } else {
             LazyColumn(
@@ -219,12 +234,25 @@ fun HabitDetailScreen(
                 item(key = "hero") {
                     HeroHeader(uiState = uiState, accentColor = accentColor)
                 }
-                item(key = "filters_and_chart") {
-                    Column(modifier = Modifier.padding(top = 8.dp)) {
+
+                item(key = "edge_to_edge_filters") {
+                    Column(modifier = Modifier.padding(top = 16.dp)) {
                         BreakdownFilterRow(
                             selectedRange = uiState.selectedRange,
                             onRangeSelected = onFilterSelected
                         )
+                    }
+                }
+
+                item(key = "streak_badge") {
+                    StreakBadgeCard(
+                        currentStreakDays = uiState.currentStreakDays,
+                        longestStreakDays = uiState.longestStreakDays
+                    )
+                }
+
+                item(key = "chart") {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
                         FilteredTotalCaption(
                             range = uiState.selectedRange,
                             filteredMinutes = uiState.filteredMinutes
@@ -234,39 +262,22 @@ fun HabitDetailScreen(
                             accentColor = accentColor,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 16.dp)
+                                .padding(horizontal = 20.dp, vertical = 12.dp)
                                 .height(140.dp)
                         )
                     }
                 }
-                item(key = "lifetime_stats") {
-                    LifetimeStatsRow(uiState = uiState)
+
+                item(key = "insightful_stats_grid") {
+                    InsightfulStatsSection(uiState = uiState)
                 }
-                item(key = "session_history_header") {
-                    Text(
-                        text = "Recent Sessions",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+
+                item(key = "collapsible_sessions") {
+                    CollapsibleRecentSessions(
+                        sessions = uiState.recentSessions,
+                        onSessionClick = onSessionClick,
+                        onSessionDelete = onSessionDelete
                     )
-                }
-                if (uiState.hasNoSessionsYet) {
-                    item(key = "no_sessions") {
-                        Text(
-                            text = "Your first minute starts your journey.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                        )
-                    }
-                } else {
-                    items(items = uiState.recentSessions, key = { it.id }) { session ->
-                        SessionRow(
-                            session = session,
-                            onClick = { onSessionClick(session.id) },
-                            onDelete = { onSessionDelete(session.id) }
-                        )
-                    }
                 }
             }
         }
@@ -310,9 +321,10 @@ private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .height(200.dp)
+            .padding(horizontal = 20.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(Color(0xFF1B1822).copy(alpha = 0.75f))
     ) {
         JellyProgressCanvas(
             visualProgress = uiState.visualProgress,
@@ -324,7 +336,7 @@ private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -332,22 +344,19 @@ private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
                 text = formatExactDuration(uiState.lifetimeMinutes),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isMaster) accentColor else MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
             Text(
                 text = uiState.stage.displayName,
                 style = MaterialTheme.typography.titleMedium,
                 color = accentColor,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
 
-    // The honest, linear counterpart to the jelly's nonlinear visual fill
-    // (Section 20): a plain progress bar showing the true percentage toward
-    // the 10,000-hour Master threshold, with the exact number spelled out.
-    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp)) {
         LinearProgressIndicator(
             progress = { uiState.actualProgress },
             modifier = Modifier
@@ -360,7 +369,7 @@ private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
         Text(
             text = "${(uiState.actualProgress * 100).roundToInt()}% of the way to Master (10,000h)",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = 0.65f),
             modifier = Modifier.padding(top = 6.dp)
         )
     }
@@ -372,18 +381,204 @@ private fun BreakdownFilterRow(
     selectedRange: TimeRange,
     onRangeSelected: (TimeRange) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 24.dp)
-            .fillMaxWidth(),
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        HABIT_DETAIL_TIME_RANGES.forEach { range ->
+        items(HABIT_DETAIL_TIME_RANGES) { range ->
+            val isSelected = range == selectedRange
             FilterChip(
-                selected = range == selectedRange,
+                selected = isSelected,
                 onClick = { onRangeSelected(range) },
-                label = { Text(range.detailLabel()) }
+                label = { Text(range.detailLabel(), fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                shape = RoundedCornerShape(percent = 50),
+                border = BorderStroke(
+                    width = 1.dp,
+                    brush = if (isSelected) {
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF80DEEA), Color(0xFFE040FB), Color(0xFFFFD54F))
+                        )
+                    } else {
+                        Brush.horizontalGradient(
+                            listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.08f))
+                        )
+                    }
+                ),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0x337C4DFF),
+                    selectedLabelColor = Color.White,
+                    containerColor = Color(0x14FFFFFF),
+                    labelColor = Color.White.copy(alpha = 0.70f)
+                )
             )
+        }
+    }
+}
+
+@Composable
+private fun StreakBadgeCard(
+    currentStreakDays: Int,
+    longestStreakDays: Int
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0x22FF6D00),
+        border = BorderStroke(1.dp, Color(0x44FF9100))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "🔥 ",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Column {
+                    Text(
+                        text = "$currentStreakDays Day Streak",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Longest Streak: $longestStreakDays days",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.75f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InsightfulStatsSection(uiState: HabitDetailUiState) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(
+                title = "Avg Session Length",
+                value = formatExactDuration(uiState.averageSessionMinutes),
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Longest Session",
+                value = formatExactDuration(uiState.longestSessionMinutes),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(
+                title = "Best Practice Day",
+                value = uiState.bestPracticeDayOfWeek,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Total Sessions",
+                value = "${uiState.sessionCount} sessions",
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0x18FFFFFF),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.60f)
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CollapsibleRecentSessions(
+    sessions: List<SessionListItem>,
+    onSessionClick: (Long) -> Unit,
+    onSessionDelete: (Long) -> Unit
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0x14FFFFFF),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Recent Sessions (${sessions.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = Color.White.copy(alpha = 0.7f)
+                )
+            }
+
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                if (sessions.isEmpty()) {
+                    Text(
+                        text = "No sessions logged yet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
+                } else {
+                    sessions.take(30).forEach { session ->
+                        SessionRow(
+                            session = session,
+                            onClick = { onSessionClick(session.id) },
+                            onDelete = { onSessionDelete(session.id) }
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
+                }
+            }
         }
     }
 }
@@ -393,18 +588,11 @@ private fun FilteredTotalCaption(range: TimeRange, filteredMinutes: Long) {
     Text(
         text = "${range.detailLabel()}: ${formatExactDuration(filteredMinutes)}",
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = Color.White.copy(alpha = 0.70f),
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
     )
 }
 
-/**
- * A minimal, streak-free bar chart (Section 28): every bar is just
- * accumulated minutes for its bucket, nothing implies success/failure or an
- * unbroken chain. Per-bar text labels are only drawn when there are few
- * enough buckets to stay legible (Week: 7, Year: 12); Month's ~30 daily
- * bars and Lifetime's yearly bars rely on the bar heights alone.
- */
 @Composable
 private fun DistributionBarChart(
     buckets: List<DistributionBucket>,
@@ -416,7 +604,7 @@ private fun DistributionBarChart(
             Text(
                 text = "No sessions in this range yet.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.White.copy(alpha = 0.60f)
             )
         }
         return
@@ -450,35 +638,13 @@ private fun DistributionBarChart(
                     Text(
                         text = bucket.label,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.60f),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun LifetimeStatsRow(uiState: HabitDetailUiState) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        StatColumn(label = "Sessions", value = uiState.sessionCount.toString())
-        StatColumn(label = "Average", value = formatExactDuration(uiState.averageSessionMinutes))
-        StatColumn(label = "Longest", value = formatExactDuration(uiState.longestSessionMinutes))
-    }
-}
-
-@Composable
-private fun StatColumn(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -506,33 +672,35 @@ private fun SessionRow(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .background(Color(0xAAFF5252))
                     .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "Delete session",
-                    tint = MaterialTheme.colorScheme.onErrorContainer
+                    tint = Color.White
                 )
             }
         }
     ) {
         ListItem(
-            headlineContent = { Text(formatSessionDateLabel(session.timestamp)) },
+            headlineContent = { Text(formatSessionDateLabel(session.timestamp), color = Color.White, fontWeight = FontWeight.SemiBold) },
             supportingContent = session.note?.takeIf { it.isNotBlank() }?.let { note ->
-                { Text(text = note) }
+                { Text(text = note, color = Color.White.copy(alpha = 0.65f)) }
             },
             trailingContent = {
                 Text(
                     text = formatExactDuration(session.durationMinutes.toLong()),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF00E5FF)
                 )
             },
+            colors = ListItemDefaults.colors(containerColor = Color(0x1EFFFFFF)),
             modifier = Modifier
                 .clickable(onClick = onClick)
-                .background(MaterialTheme.colorScheme.surface)
+                .clip(RoundedCornerShape(12.dp))
         )
     }
 }
@@ -578,33 +746,20 @@ private fun EditHabitDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DeleteHabitConfirmationDialog(
     habitName: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Delete $habitName?") },
-        text = {
-            Text("This permanently deletes $habitName and every logged session. This can't be undone.")
-        },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Delete") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    DeleteHabitConfirmationSheet(
+        habitName = habitName,
+        onDismiss = onDismiss,
+        onConfirmDelete = onConfirm
     )
 }
 
-/**
- * The combined Section 16/26 manual session dialog: presets aren't offered
- * here (those live in the quick-log sheet) since the point of this dialog is
- * an exact, possibly backdated entry. Only the *date* is user-adjustable —
- * time-of-day defaults to the moment of logging for a new session, or is
- * preserved unchanged when editing an existing one — which is enough to
- * satisfy "log a past or specific session" without a full custom time
- * picker; the date is what actually matters for the day/week/month/year
- * breakdowns this screen shows.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ManualSessionDialog(
@@ -696,8 +851,6 @@ private fun ManualSessionDialog(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-                        // DatePicker returns UTC-midnight millis for the chosen date
-                        // regardless of device zone, so it must be read back in UTC.
                         selectedEpochDay = Instant.ofEpochMilli(millis)
                             .atZone(ZoneId.of("UTC"))
                             .toLocalDate()
@@ -734,6 +887,3 @@ private fun TimeRange.detailLabel(): String = when (this) {
     TimeRange.MONTH -> "This Month"
     TimeRange.YEAR -> "This Year"
 }
-
-private fun ProgressionStage.toColor(): Color =
-    Color(android.graphics.Color.parseColor(colorHex))

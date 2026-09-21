@@ -23,16 +23,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Drives the Habit Detail screen (Sections 25–28) for a single [habitId].
- *
- * Deliberately fetches the habit's *full* session list once via
- * [HabitractRepository.observeSessions] rather than issuing a fresh
- * range-filtered query every time [onFilterSelected] changes: the filtered
- * total and the distribution buckets are both derived from that same list
- * in [buildUiState]/[buildDistributionBuckets], which is simpler and avoids
- * duplicate queries for what's normally a modest number of rows per habit.
- */
 class HabitDetailViewModel(
     private val habitId: Long,
     private val repository: HabitractRepository,
@@ -40,17 +30,10 @@ class HabitDetailViewModel(
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : ViewModel() {
 
-    private val selectedRange = MutableStateFlow(TimeRange.WEEK)
+    private val selectedRange = MutableStateFlow(TimeRange.LIFETIME)
     private val dialogState = MutableStateFlow<HabitDetailDialogState>(HabitDetailDialogState.None)
     private val isDeleted = MutableStateFlow(false)
 
-    /**
-     * Kept as its own [StateFlow] (rather than folded straight into
-     * [uiState]) so [updateHabit] and [archiveOrDeleteHabit] can read the
-     * last-known full [Habit] synchronously via `.value` and `.copy()` it,
-     * without needing every one of its fields (e.g. `sortOrder`) duplicated
-     * into [HabitDetailUiState] just to round-trip them back out again.
-     */
     private val habitAggregates: StateFlow<HabitAggregates?> = combine(
         repository.observeHabit(habitId),
         repository.observeSessions(habitId),
@@ -110,6 +93,9 @@ class HabitDetailViewModel(
             0L
         }
 
+        val (currentStreak, longestStreak) = calculateStreaks(sessions, zoneId)
+        val bestDay = calculateBestDayOfWeek(sessions, zoneId)
+
         return HabitDetailUiState(
             isLoading = false,
             habitId = habit.id,
@@ -128,6 +114,9 @@ class HabitDetailViewModel(
             sessionCount = aggregates.sessionCount,
             averageSessionMinutes = averageSessionMinutes,
             longestSessionMinutes = aggregates.longestSession?.durationMinutes?.toLong() ?: 0L,
+            currentStreakDays = currentStreak,
+            longestStreakDays = longestStreak,
+            bestPracticeDayOfWeek = bestDay,
             recentSessions = sessions
                 .sortedByDescending { it.timestamp }
                 .take(MAX_RECENT_SESSIONS)
@@ -135,6 +124,56 @@ class HabitDetailViewModel(
             dialogState = dialog,
             isDeleted = false
         )
+    }
+
+    private fun calculateStreaks(sessions: List<PracticeSession>, zoneId: ZoneId): Pair<Int, Int> {
+        if (sessions.isEmpty()) return Pair(0, 0)
+
+        val dates = sessions.map { ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate() }
+            .distinct()
+            .sortedDescending()
+
+        if (dates.isEmpty()) return Pair(0, 0)
+
+        val today = LocalDate.now(zoneId)
+        val yesterday = today.minusDays(1)
+
+        var currentStreak = 0
+        var checkDate = if (dates.contains(today)) today else if (dates.contains(yesterday)) yesterday else null
+
+        if (checkDate != null) {
+            while (dates.contains(checkDate)) {
+                currentStreak++
+                checkDate = checkDate?.minusDays(1)
+            }
+        }
+
+        var longestStreak = 0
+        var tempStreak = 0
+        val sortedAsc = dates.sorted()
+
+        var prevDate: LocalDate? = null
+        for (date in sortedAsc) {
+            if (prevDate == null || date == prevDate.plusDays(1)) {
+                tempStreak++
+            } else if (date != prevDate) {
+                tempStreak = 1
+            }
+            if (tempStreak > longestStreak) longestStreak = tempStreak
+            prevDate = date
+        }
+
+        return Pair(currentStreak, longestStreak)
+    }
+
+    private fun calculateBestDayOfWeek(sessions: List<PracticeSession>, zoneId: ZoneId): String {
+        if (sessions.isEmpty()) return "N/A"
+        val dayMinutesMap = sessions.groupBy {
+            ZonedDateTime.ofInstant(it.timestamp, zoneId).dayOfWeek
+        }.mapValues { entry -> entry.value.sumOf { it.durationMinutes } }
+
+        val bestDay = dayMinutesMap.maxByOrNull { it.value }?.key ?: return "N/A"
+        return bestDay.getDisplayName(TextStyle.FULL, Locale.getDefault())
     }
 
     private fun buildDistributionBuckets(
@@ -145,6 +184,12 @@ class HabitDetailViewModel(
         val zonedNow = ZonedDateTime.ofInstant(now, zoneId)
 
         return when (range) {
+            TimeRange.TODAY -> {
+                listOf(
+                    DistributionBucket("Today", sessions.minutesOnLocalDate(zonedNow.toLocalDate(), zoneId))
+                )
+            }
+
             TimeRange.WEEK -> {
                 val weekStart = zonedNow.toLocalDate()
                     .minusDays((zonedNow.dayOfWeek.value - 1).toLong())
@@ -181,7 +226,7 @@ class HabitDetailViewModel(
                 }
             }
 
-            TimeRange.LIFETIME, TimeRange.TODAY -> {
+            TimeRange.LIFETIME -> {
                 if (sessions.isEmpty()) {
                     emptyList()
                 } else {
@@ -205,8 +250,6 @@ class HabitDetailViewModel(
     ): Long = filter { ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate() == date }
         .sumOf { it.durationMinutes.toLong() }
 
-    // ---- Filter ----
-
     fun onFilterSelected(range: TimeRange) {
         require(range in HABIT_DETAIL_TIME_RANGES) {
             "$range is not a supported Habit Detail breakdown filter."
@@ -214,9 +257,6 @@ class HabitDetailViewModel(
         selectedRange.value = range
     }
 
-    // ---- Sessions ----
-
-    /** Logs a brand-new session (Section 16/26's manual "log a specific session" entry point). */
     fun logSession(durationMinutes: Long, timestampEpochMs: Long, note: String?) {
         require(durationMinutes > 0) { "Duration must be positive, was $durationMinutes." }
         viewModelScope.launch {
@@ -233,7 +273,6 @@ class HabitDetailViewModel(
         }
     }
 
-    /** Overwrites an existing session (the manual dialog's "edit" mode). */
     fun editSession(sessionId: Long, durationMinutes: Long, timestampEpochMs: Long, note: String?) {
         require(durationMinutes > 0) { "Duration must be positive, was $durationMinutes." }
         viewModelScope.launch {
@@ -256,8 +295,6 @@ class HabitDetailViewModel(
         }
     }
 
-    // ---- Habit management ----
-
     fun updateHabit(name: String, description: String?, imageUri: String?) {
         val current = habitAggregates.value ?: return
         val trimmedName = name.trim()
@@ -274,13 +311,6 @@ class HabitDetailViewModel(
         }
     }
 
-    /**
-     * Deletes the habit and all of its sessions (cascading FK, Section 32).
-     * Named to match the spec's action list; Habitract's data model has no
-     * `archived`/hidden flag today, so this is a true delete rather than a
-     * soft archive — adding real archiving would need its own schema change
-     * and is not part of what this phase's data model supports.
-     */
     fun archiveOrDeleteHabit() {
         val current = habitAggregates.value ?: return
         viewModelScope.launch {
@@ -289,8 +319,6 @@ class HabitDetailViewModel(
             isDeleted.value = true
         }
     }
-
-    // ---- Dialogs ----
 
     fun showEditHabitDialog() {
         dialogState.value = HabitDetailDialogState.EditHabit
@@ -316,16 +344,10 @@ class HabitDetailViewModel(
     )
 
     private companion object {
-        /** Session history is capped for display; the derived lifetime aggregates never are. */
         const val MAX_RECENT_SESSIONS = 200
     }
 }
 
-/**
- * No DI framework is wired up yet (see the data-architecture notes), so
- * [HabitDetailViewModel] is provided via a plain [ViewModelProvider.Factory]
- * parameterized by the [habitId] the screen was opened with.
- */
 class HabitDetailViewModelFactory(
     private val habitId: Long,
     private val repository: HabitractRepository,
