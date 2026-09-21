@@ -86,7 +86,7 @@ fun HabitCard(
                     "${habit.name}. $formattedDuration invested. ${stage.displayName} stage."
             }
     ) {
-        // Full length & height, highly faded subtle background photo
+        // Full length & height, faded background photo
         if (hasBackgroundImage) {
             Box(
                 modifier = Modifier
@@ -96,7 +96,7 @@ fun HabitCard(
                 AsyncImage(
                     model = habit.imageUri,
                     contentDescription = null,
-                    alpha = 0.15f,
+                    alpha = 0.35f,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -106,8 +106,8 @@ fun HabitCard(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color.Black.copy(alpha = 0.55f),
-                                    Color.Black.copy(alpha = 0.70f)
+                                    Color.Black.copy(alpha = 0.45f),
+                                    Color.Black.copy(alpha = 0.60f)
                                 )
                             )
                         )
