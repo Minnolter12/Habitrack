@@ -86,7 +86,7 @@ fun HabitCard(
                     "${habit.name}. $formattedDuration invested. ${stage.displayName} stage."
             }
     ) {
-        // Left-aligned, highly faded, subtle background image
+        // Full length & height, highly faded subtle background photo
         if (hasBackgroundImage) {
             Box(
                 modifier = Modifier
@@ -96,23 +96,18 @@ fun HabitCard(
                 AsyncImage(
                     model = habit.imageUri,
                     contentDescription = null,
-                    alpha = 0.18f,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(0.55f)
-                        .align(Alignment.CenterStart),
+                    alpha = 0.15f,
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                // Soft gradient fading out to the right
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Brush.horizontalGradient(
+                            Brush.verticalGradient(
                                 colors = listOf(
-                                    Color.Transparent,
-                                    Color(0xFF120F1A).copy(alpha = 0.70f),
-                                    Color(0xFF120F1A)
+                                    Color.Black.copy(alpha = 0.55f),
+                                    Color.Black.copy(alpha = 0.70f)
                                 )
                             )
                         )
