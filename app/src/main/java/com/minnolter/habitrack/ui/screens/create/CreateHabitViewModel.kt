@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.minnolter.habitrack.data.local.PresetActivitiesDatabase
 import com.minnolter.habitrack.data.local.datastore.SettingsDataStore
+import com.minnolter.habitrack.domain.model.EstimationMode
 import com.minnolter.habitrack.domain.model.Habit
 import com.minnolter.habitrack.domain.model.HabitCreationDraft
 import com.minnolter.habitrack.domain.model.PracticeSession
@@ -21,27 +22,14 @@ import java.time.Instant
 data class CreateHabitWizardUiState(
     val isFirstRunOnboarding: Boolean = false,
     val stepIndex: Int = 0,
-    val totalSteps: Int = 4,
+    val totalSteps: Int = 6,
     val draft: HabitCreationDraft = HabitCreationDraft(),
     val searchQuery: String = "",
-    val filteredPresets: List<PresetActivity> = emptyList(),
+    val filteredPresets: List<PresetActivity> = PresetActivitiesDatabase.ALL_PRESETS,
     val isSaving: Boolean = false,
     val validationError: String? = null
 ) {
     val currentStagePreview: ProgressionStage get() = draft.calculatedStage
-
-    val projectionInsight: String
-        get() {
-            val baseline = draft.calculatedBaselineMinutes
-            val schedule = draft.scheduleExpectation
-            val yearsToMaster = schedule.calculateProjectedYearsToMaster(baseline)
-
-            return when {
-                yearsToMaster == null -> "Commit to a weekly schedule to calculate your projected timeline."
-                yearsToMaster <= 0f -> "You have reached 10,000 hours Mastery!"
-                else -> "At this rate (~${schedule.weeklyMinutes / 60}h/week), you will reach 10,000h Mastery in ~$yearsToMaster years."
-            }
-        }
 }
 
 class CreateHabitViewModel(
@@ -50,13 +38,13 @@ class CreateHabitViewModel(
     private val settingsDataStore: SettingsDataStore
 ) : ViewModel() {
 
-    private val totalStepsCount = if (isFirstRunOnboarding) 5 else 4
+    private val totalStepsCount = if (isFirstRunOnboarding) 7 else 6
 
     private val _uiState = MutableStateFlow(
         CreateHabitWizardUiState(
             isFirstRunOnboarding = isFirstRunOnboarding,
             totalSteps = totalStepsCount,
-            filteredPresets = PresetActivitiesDatabase.ALL_PRESETS.take(30)
+            filteredPresets = PresetActivitiesDatabase.ALL_PRESETS
         )
     )
     val uiState: StateFlow<CreateHabitWizardUiState> = _uiState.asStateFlow()
@@ -67,7 +55,7 @@ class CreateHabitViewModel(
         _uiState.update {
             it.copy(
                 searchQuery = query,
-                filteredPresets = filtered.take(50)
+                filteredPresets = filtered
             )
         }
     }
@@ -80,7 +68,20 @@ class CreateHabitViewModel(
                     habitName = preset.name,
                     category = preset.category,
                     colorHex = preset.defaultColorHex,
-                    imageUrl = preset.imageUrl
+                    imageUrl = preset.imageUrl,
+                    isCustomHabit = false
+                )
+            )
+        }
+    }
+
+    fun enableCustomHabit() {
+        _uiState.update {
+            it.copy(
+                draft = it.draft.copy(
+                    habitName = "",
+                    imageUrl = null,
+                    isCustomHabit = true
                 )
             )
         }
@@ -93,7 +94,7 @@ class CreateHabitViewModel(
     fun goToNextStep(): Boolean {
         val state = _uiState.value
 
-        // Validation for step 1 (Discipline & Title)
+        // Validation for step 1 (Discipline/Custom Name)
         val titleStepIdx = if (state.isFirstRunOnboarding) 1 else 0
         if (state.stepIndex == titleStepIdx) {
             if (state.draft.habitName.isBlank()) {

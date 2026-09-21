@@ -83,7 +83,7 @@ fun StepExperience(
         Spacer(modifier = Modifier.height(20.dp))
 
         when (draft.estimationMode) {
-            EstimationMode.ZERO_BASE -> {
+            EstimationMode.ZERO_BASE, EstimationMode.MANUAL_SLIDER -> {
                 Text(
                     text = "Starting from scratch (0 hours). Your journey begins at Stage 1: Just Started.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -180,6 +180,7 @@ fun StepExperience(
                     )
                 )
             }
+
         }
 
         Spacer(modifier = Modifier.height(16.dp))
