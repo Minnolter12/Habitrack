@@ -53,7 +53,8 @@ enum class ProgressionStage(
          * total accumulated lifetime minutes.
          */
         fun fromMinutes(totalMinutes: Long): ProgressionStage {
-            return descendingByThreshold.first { totalMinutes >= it.minMinutes }
+            val sanitizedMinutes = totalMinutes.coerceAtLeast(0L)
+            return descendingByThreshold.firstOrNull { sanitizedMinutes >= it.minMinutes } ?: JUST_STARTED
         }
 
         /**
