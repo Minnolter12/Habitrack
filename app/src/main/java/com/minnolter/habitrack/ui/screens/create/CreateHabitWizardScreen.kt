@@ -191,12 +191,12 @@ fun CreateHabitWizardScreen(
                         placeholder = "e.g., 4",
                         onValueChanged = { val s = (it.toIntOrNull() ?: 0).coerceIn(0, 7); viewModel.updateDraft { d -> d.copy(sessionsPerWeek = s) } }
                     )
-                    6 -> QuestionNumericPage(
+                    6 -> QuestionDecimalPage(
                         title = "Question 4 of 4: Session Duration",
-                        question = "How many minutes per session on average?",
-                        value = if (uiState.draft.minutesPerSession > 0) uiState.draft.minutesPerSession.toString() else "",
-                        placeholder = "e.g., 45",
-                        onValueChanged = { val min = (it.toIntOrNull() ?: 0).coerceIn(0, 1440); viewModel.updateDraft { d -> d.copy(minutesPerSession = min) } }
+                        question = "How many hours per session on average?",
+                        value = if (uiState.draft.hoursPerSession > 0f) uiState.draft.hoursPerSession.toString().removeSuffix(".0") else "",
+                        placeholder = "e.g., 1.5",
+                        onValueChanged = { val hrs = (it.toFloatOrNull() ?: 0f).coerceIn(0f, 24f); viewModel.updateDraft { d -> d.copy(hoursPerSession = hrs) } }
                     )
                     7 -> FineTuneSliderPage(
                         draft = uiState.draft,
@@ -345,6 +345,53 @@ private fun QuestionBreakPage(
             label = { Text("Break duration in ${breakUnit.label}") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors()
+        )
+    }
+}
+
+@Composable
+private fun QuestionDecimalPage(
+    title: String,
+    question: String,
+    value: String,
+    placeholder: String,
+    onValueChanged: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF00E5FF)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = question,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = value,
+            onValueChange = { input ->
+                val validDecimal = input.filter { it.isDigit() || it == '.' }
+                onValueChanged(validDecimal)
+            },
+            placeholder = { Text(placeholder) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth(),
             colors = fieldColors()

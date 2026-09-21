@@ -154,9 +154,9 @@ fun StepExperience(
                         colors = fieldColors()
                     )
                     OutlinedTextField(
-                        value = if (draft.minutesPerSession > 0) draft.minutesPerSession.toString() else "",
-                        onValueChange = { val min = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(minutesPerSession = min) } },
-                        label = { Text("Mins/Session") },
+                        value = if (draft.hoursPerSession > 0f) draft.hoursPerSession.toString() else "",
+                        onValueChange = { val hrs = it.toFloatOrNull() ?: 0f; onDraftChanged { d -> d.copy(hoursPerSession = hrs) } },
+                        label = { Text("Hours/Session") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         colors = fieldColors()

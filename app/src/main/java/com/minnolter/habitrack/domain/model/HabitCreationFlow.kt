@@ -16,9 +16,10 @@ enum class BreakUnit(val label: String) {
 }
 
 data class ScheduleExpectation(
-    val sessionDurationMinutes: Int = 45,
+    val sessionDurationHours: Float = 1.0f,
     val weeklyFrequencyDays: Int = 4
 ) {
+    val sessionDurationMinutes: Int get() = (sessionDurationHours * 60f).toInt()
     val weeklyMinutes: Long get() = (sessionDurationMinutes * weeklyFrequencyDays).toLong()
 
     fun calculateProjectedYearsToMaster(currentMinutes: Long): Float? {
@@ -43,7 +44,7 @@ data class HabitCreationDraft(
     val breakValue: Int = 0,
     val breakUnit: BreakUnit = BreakUnit.MONTHS,
     val sessionsPerWeek: Int = 3,
-    val minutesPerSession: Int = 45,
+    val hoursPerSession: Float = 1.0f,
     val consistencyFactor: Float = 0.85f,
     val manualOverrideHours: Float = 0f,
     val scheduleExpectation: ScheduleExpectation = ScheduleExpectation(),
@@ -60,7 +61,7 @@ data class HabitCreationDraft(
                 val grossMinutes = calculateGrossMinutes(
                     yearsPracticed = yearsPracticed.coerceAtMost(100),
                     sessionsPerWeek = sessionsPerWeek.coerceIn(0, 7),
-                    minutesPerSession = minutesPerSession.coerceIn(0, 1440),
+                    hoursPerSession = hoursPerSession.coerceIn(0f, 24f),
                     consistencyFactor = consistencyFactor
                 )
                 val breakMinutes = calculateBreakMinutes(breakValue, breakUnit)
@@ -77,12 +78,12 @@ data class HabitCreationDraft(
 fun calculateGrossMinutes(
     yearsPracticed: Int,
     sessionsPerWeek: Int,
-    minutesPerSession: Int,
+    hoursPerSession: Float,
     consistencyFactor: Float
 ): Long {
     val totalWeeks = yearsPracticed * 52f
     val totalSessions = totalWeeks * sessionsPerWeek
-    val rawMinutes = totalSessions * minutesPerSession
+    val rawMinutes = totalSessions * (hoursPerSession * 60f)
     return (rawMinutes * consistencyFactor).toLong()
 }
 
