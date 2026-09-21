@@ -9,6 +9,12 @@ enum class EstimationMode {
     MANUAL_SLIDER
 }
 
+enum class BreakUnit(val label: String) {
+    YEARS("Years"),
+    MONTHS("Months"),
+    WEEKS("Weeks")
+}
+
 data class ScheduleExpectation(
     val sessionDurationMinutes: Int = 45,
     val weeklyFrequencyDays: Int = 4
@@ -29,11 +35,13 @@ data class ScheduleExpectation(
 data class HabitCreationDraft(
     val habitName: String = "",
     val category: HabitCategory = HabitCategory.MUSIC,
+    val hasPracticedBefore: Boolean = false,
     val estimationMode: EstimationMode = EstimationMode.ZERO_BASE,
     val knownHours: Int = 0,
     val knownMinutes: Int = 0,
     val yearsPracticed: Int = 0,
-    val monthsPracticed: Int = 0,
+    val breakValue: Int = 0,
+    val breakUnit: BreakUnit = BreakUnit.MONTHS,
     val sessionsPerWeek: Int = 3,
     val minutesPerSession: Int = 45,
     val consistencyFactor: Float = 0.85f,
@@ -45,19 +53,18 @@ data class HabitCreationDraft(
 ) {
     val calculatedBaselineMinutes: Long
         get() {
+            if (!hasPracticedBefore) return 0L
             val raw = if (estimationMode == EstimationMode.MANUAL_SLIDER) {
                 (manualOverrideHours * 60f).toLong()
             } else {
-                calculateBaselineMinutes(
-                    mode = estimationMode,
-                    knownHours = knownHours,
-                    knownMinutes = knownMinutes,
+                val grossMinutes = calculateGrossMinutes(
                     yearsPracticed = yearsPracticed.coerceAtMost(100),
-                    monthsPracticed = monthsPracticed.coerceIn(0, 11),
                     sessionsPerWeek = sessionsPerWeek.coerceIn(0, 7),
                     minutesPerSession = minutesPerSession.coerceIn(0, 1440),
                     consistencyFactor = consistencyFactor
                 )
+                val breakMinutes = calculateBreakMinutes(breakValue, breakUnit)
+                (grossMinutes - breakMinutes).coerceAtLeast(0L)
             }
             // Absolute cap of 50,000 hours per card (3,000,000 minutes) to prevent overflow bugs
             return raw.coerceAtMost(50_000L * 60L)
@@ -67,26 +74,23 @@ data class HabitCreationDraft(
         get() = ProgressionStage.fromMinutes(calculatedBaselineMinutes)
 }
 
-fun calculateBaselineMinutes(
-    mode: EstimationMode,
-    knownHours: Int = 0,
-    knownMinutes: Int = 0,
-    yearsPracticed: Int = 0,
-    monthsPracticed: Int = 0,
-    sessionsPerWeek: Int = 0,
-    minutesPerSession: Int = 0,
-    consistencyFactor: Float = 0.85f
+fun calculateGrossMinutes(
+    yearsPracticed: Int,
+    sessionsPerWeek: Int,
+    minutesPerSession: Int,
+    consistencyFactor: Float
 ): Long {
-    return when (mode) {
-        EstimationMode.ZERO_BASE -> 0L
-        EstimationMode.DIRECT_HOURS -> (knownHours * 60L + knownMinutes).coerceAtLeast(0L)
-        EstimationMode.HISTORICAL_CALCULATOR -> {
-            val totalMonths = (yearsPracticed * 12) + monthsPracticed
-            val totalWeeks = totalMonths * 4.33f
-            val totalEstimatedSessions = totalWeeks * sessionsPerWeek
-            val rawMinutes = totalEstimatedSessions * minutesPerSession
-            (rawMinutes * consistencyFactor).toLong().coerceAtLeast(0L)
-        }
-        EstimationMode.MANUAL_SLIDER -> 0L
+    val totalWeeks = yearsPracticed * 52f
+    val totalSessions = totalWeeks * sessionsPerWeek
+    val rawMinutes = totalSessions * minutesPerSession
+    return (rawMinutes * consistencyFactor).toLong()
+}
+
+fun calculateBreakMinutes(value: Int, unit: BreakUnit): Long {
+    if (value <= 0) return 0L
+    return when (unit) {
+        BreakUnit.YEARS -> (value * 52F * 7F * 60F).toLong()
+        BreakUnit.MONTHS -> (value * 4.33F * 7F * 60F).toLong()
+        BreakUnit.WEEKS -> (value * 7F * 60F).toLong()
     }
 }

@@ -130,9 +130,9 @@ fun StepExperience(
                         colors = fieldColors()
                     )
                     OutlinedTextField(
-                        value = if (draft.monthsPracticed > 0) draft.monthsPracticed.toString() else "",
-                        onValueChange = { val m = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(monthsPracticed = m) } },
-                        label = { Text("Months") },
+                        value = if (draft.breakValue > 0) draft.breakValue.toString() else "",
+                        onValueChange = { val m = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(breakValue = m) } },
+                        label = { Text("Break Duration") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         colors = fieldColors()

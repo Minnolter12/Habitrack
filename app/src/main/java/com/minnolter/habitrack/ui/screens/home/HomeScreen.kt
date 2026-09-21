@@ -199,7 +199,7 @@ fun HomeScreen(
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                     text = { Text("Add Habit", fontWeight = FontWeight.SemiBold) },
                     shape = RoundedCornerShape(percent = 50),
-                    containerColor = Color(0x667C4DFF),
+                    containerColor = Color(0xFF7C4DFF),
                     contentColor = Color.White,
                     elevation = FloatingActionButtonDefaults.elevation(
                         defaultElevation = 8.dp,
@@ -253,20 +253,12 @@ private fun HomeContent(
         contentPadding = PaddingValues(bottom = 96.dp)
     ) {
         item(key = "dashboard_header") {
-            // Slightly lighter background container for dashboard section to feel distinct
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                color = Color(0xFF1E1B28)
-            ) {
-                DashboardSummaryHeader(
-                    selectedRange = uiState.selectedTimeRange,
-                    totalMinutes = uiState.dashboardTotalMinutes,
-                    habitCount = uiState.habits.size,
-                    onRangeSelected = onTimeRangeSelected
-                )
-            }
+            DashboardSummaryHeader(
+                selectedRange = uiState.selectedTimeRange,
+                totalMinutes = uiState.dashboardTotalMinutes,
+                habitCount = uiState.habits.size,
+                onRangeSelected = onTimeRangeSelected
+            )
         }
 
         items(items = uiState.habits, key = { it.habit.id }) { summary ->

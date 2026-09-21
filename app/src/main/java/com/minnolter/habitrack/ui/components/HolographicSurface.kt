@@ -197,11 +197,11 @@ fun Modifier.holographicSurface(
                         alpha = (0.40f + activeIntensity * 0.25f) * palette.intensityFactor
                     )
 
-                    // LAYER 4: Interactive Touch Flare
+                    // LAYER 4: Interactive Touch Flare (reduced by 50%)
                     if (isTouched) {
                         val touchCenter = Offset(touchX.value * width, touchY.value * height)
-                        val touchRadius = maxOf(width, height) * 0.65f
-                        val flareAlpha = activeIntensity * 0.55f
+                        val touchRadius = maxOf(width, height) * 0.50f
+                        val flareAlpha = activeIntensity * 0.25f
 
                         drawCircle(
                             brush = Brush.radialGradient(

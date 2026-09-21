@@ -5,13 +5,13 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -27,8 +26,6 @@ import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -44,18 +41,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.minnolter.habitrack.domain.model.HabitCategory
 import com.minnolter.habitrack.domain.model.PresetActivity
 
 @Composable
 fun StepDiscipline(
     habitTitle: String,
-    selectedCategory: HabitCategory,
     searchQuery: String,
     filteredPresets: List<PresetActivity>,
     isCustomHabit: Boolean,
     onTitleChanged: (String) -> Unit,
-    onCategorySelected: (HabitCategory) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onPresetSelected: (PresetActivity) -> Unit,
     onEnableCustomHabit: () -> Unit,
@@ -72,9 +66,11 @@ fun StepDiscipline(
 
     Column(
         modifier = modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(horizontal = 20.dp)
     ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
             text = "Step 1: Choose Your Discipline",
             style = MaterialTheme.typography.titleLarge,
@@ -83,14 +79,13 @@ fun StepDiscipline(
         )
 
         Text(
-            text = if (isCustomHabit) "Create a custom habit and choose a photo/icon." else "Select from 100 unique activity presets or make a custom habit.",
+            text = if (isCustomHabit) "Create a custom habit & pick a photo/icon below." else "Select from 100 unique activity presets or make a custom habit.",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.70f),
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
         )
 
         if (isCustomHabit) {
-            // Custom Habit Creator Inputs
             OutlinedTextField(
                 value = habitTitle,
                 onValueChange = onTitleChanged,
@@ -101,79 +96,55 @@ fun StepDiscipline(
                 colors = fieldColors()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = "Choose an Icon / Photo from Preset Activities:",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.70f)
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.80f)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
+            // Larger icon choices row so photos are clearly visible
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
                 items(filteredPresets) { preset ->
                     Box(
                         modifier = Modifier
-                            .size(54.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White.copy(alpha = 0.10f))
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.12f))
                             .clickable { onPresetSelected(preset) }
                     ) {
                         AsyncImage(
                             model = preset.imageUrl,
                             contentDescription = null,
-                            alpha = 0.65f,
-                            modifier = Modifier.fillMaxWidth(),
+                            alpha = 0.70f,
+                            modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedButton(
                 onClick = {
                     photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Filled.AddPhotoAlternate, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
                 Text("Import Custom Photo from Gallery")
             }
         } else {
-            // Category Filter Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                HabitCategory.entries.forEach { category ->
-                    val isSelected = category == selectedCategory
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onCategorySelected(category) },
-                        label = { Text(category.displayName) },
-                        shape = RoundedCornerShape(percent = 50),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0x447C4DFF),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0x14FFFFFF),
-                            labelColor = Color.White.copy(alpha = 0.65f)
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Search Bar for 100 presets
+            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChanged,
@@ -187,11 +158,11 @@ fun StepDiscipline(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Searchable Presets List
+            // Presets List expanding to occupy remaining available height down to bottom
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp),
+                    .weight(1f),
                 contentPadding = PaddingValues(vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -208,8 +179,10 @@ fun StepDiscipline(
 
             Button(
                 onClick = onEnableCustomHabit,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0x2200E5FF),
                     contentColor = Color(0xFF00E5FF)
@@ -239,15 +212,15 @@ private fun PresetActivityRow(
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.Black.copy(alpha = 0.3f))
         ) {
             AsyncImage(
                 model = preset.imageUrl,
                 contentDescription = null,
-                alpha = 0.45f,
-                modifier = Modifier.fillMaxWidth(),
+                alpha = 0.55f,
+                modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
         }

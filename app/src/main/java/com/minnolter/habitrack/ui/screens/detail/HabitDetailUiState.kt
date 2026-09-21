@@ -8,11 +8,11 @@ import java.time.Instant
  * Breakdown filters for Habit Detail.
  */
 val HABIT_DETAIL_TIME_RANGES: List<TimeRange> = listOf(
-    TimeRange.LIFETIME,
     TimeRange.TODAY,
     TimeRange.WEEK,
     TimeRange.MONTH,
-    TimeRange.YEAR
+    TimeRange.YEAR,
+    TimeRange.LIFETIME
 )
 
 /**

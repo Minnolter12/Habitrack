@@ -139,7 +139,7 @@ class HabitDetailViewModel(
         val yesterday = today.minusDays(1)
 
         var currentStreak = 0
-        var checkDate = if (dates.contains(today)) today else if (dates.contains(yesterday)) yesterday else null
+        var checkDate: LocalDate? = if (dates.contains(today)) today else if (dates.contains(yesterday)) yesterday else null
 
         if (checkDate != null) {
             while (dates.contains(checkDate)) {
@@ -185,9 +185,24 @@ class HabitDetailViewModel(
 
         return when (range) {
             TimeRange.TODAY -> {
-                listOf(
-                    DistributionBucket("Today", sessions.minutesOnLocalDate(zonedNow.toLocalDate(), zoneId))
-                )
+                val todayDate = zonedNow.toLocalDate()
+                val todaySessions = sessions.filter {
+                    ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate() == todayDate
+                }
+                listOf(0, 3, 6, 9, 12, 15, 18, 21).map { hour ->
+                    val hourMinutes = todaySessions.filter {
+                        val hourOfDay = ZonedDateTime.ofInstant(it.timestamp, zoneId).hour
+                        hourOfDay in hour..(hour + 2)
+                    }.sumOf { it.durationMinutes.toLong() }
+                    val label = when (hour) {
+                        0 -> "12a"
+                        6 -> "6a"
+                        12 -> "12p"
+                        18 -> "6p"
+                        else -> "${if (hour > 12) hour - 12 else hour}${if (hour >= 12) "p" else "a"}"
+                    }
+                    DistributionBucket(label = label, minutes = hourMinutes)
+                }
             }
 
             TimeRange.WEEK -> {
@@ -227,18 +242,17 @@ class HabitDetailViewModel(
             }
 
             TimeRange.LIFETIME -> {
-                if (sessions.isEmpty()) {
-                    emptyList()
+                val startYear = if (sessions.isNotEmpty()) {
+                    sessions.minOf { ZonedDateTime.ofInstant(it.timestamp, zoneId).year }
                 } else {
-                    val firstYear = sessions.minOf {
-                        ZonedDateTime.ofInstant(it.timestamp, zoneId).year
-                    }
-                    (firstYear..zonedNow.year).map { year ->
-                        val minutes = sessions.filter {
-                            ZonedDateTime.ofInstant(it.timestamp, zoneId).year == year
-                        }.sumOf { it.durationMinutes.toLong() }
-                        DistributionBucket(label = year.toString(), minutes = minutes)
-                    }
+                    zonedNow.year
+                }
+                val endYear = maxOf(zonedNow.year + 3, startYear + 4)
+                (startYear..endYear).map { year ->
+                    val minutes = sessions.filter {
+                        ZonedDateTime.ofInstant(it.timestamp, zoneId).year == year
+                    }.sumOf { it.durationMinutes.toLong() }
+                    DistributionBucket(label = year.toString(), minutes = minutes)
                 }
             }
         }
@@ -251,9 +265,6 @@ class HabitDetailViewModel(
         .sumOf { it.durationMinutes.toLong() }
 
     fun onFilterSelected(range: TimeRange) {
-        require(range in HABIT_DETAIL_TIME_RANGES) {
-            "$range is not a supported Habit Detail breakdown filter."
-        }
         selectedRange.value = range
     }
 

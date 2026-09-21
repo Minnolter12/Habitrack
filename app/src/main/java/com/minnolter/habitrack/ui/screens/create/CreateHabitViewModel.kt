@@ -22,7 +22,7 @@ import java.time.Instant
 data class CreateHabitWizardUiState(
     val isFirstRunOnboarding: Boolean = false,
     val stepIndex: Int = 0,
-    val totalSteps: Int = 6,
+    val totalSteps: Int = 7,
     val draft: HabitCreationDraft = HabitCreationDraft(),
     val searchQuery: String = "",
     val filteredPresets: List<PresetActivity> = PresetActivitiesDatabase.ALL_PRESETS,
@@ -30,6 +30,16 @@ data class CreateHabitWizardUiState(
     val validationError: String? = null
 ) {
     val currentStagePreview: ProgressionStage get() = draft.calculatedStage
+
+    /** Returns whether the Continue button should be enabled for the current step. */
+    val isCurrentStepValid: Boolean
+        get() {
+            val titleStepIdx = if (isFirstRunOnboarding) 1 else 0
+            if (stepIndex == titleStepIdx) {
+                return draft.habitName.isNotBlank()
+            }
+            return true
+        }
 }
 
 class CreateHabitViewModel(
@@ -38,7 +48,7 @@ class CreateHabitViewModel(
     private val settingsDataStore: SettingsDataStore
 ) : ViewModel() {
 
-    private val totalStepsCount = if (isFirstRunOnboarding) 7 else 6
+    private val totalStepsCount = if (isFirstRunOnboarding) 8 else 7
 
     private val _uiState = MutableStateFlow(
         CreateHabitWizardUiState(
@@ -91,10 +101,27 @@ class CreateHabitViewModel(
         _uiState.update { it.copy(draft = transform(it.draft), validationError = null) }
     }
 
+    fun setHasPracticedBefore(hasPracticed: Boolean, onFinished: (habitId: Long) -> Unit) {
+        _uiState.update {
+            it.copy(
+                draft = it.draft.copy(
+                    hasPracticedBefore = hasPracticed,
+                    estimationMode = if (hasPracticed) EstimationMode.HISTORICAL_CALCULATOR else EstimationMode.ZERO_BASE
+                )
+            )
+        }
+
+        if (!hasPracticed) {
+            // Directly save habit with 0 hours logged!
+            saveHabit(onFinished)
+        } else {
+            goToNextStep()
+        }
+    }
+
     fun goToNextStep(): Boolean {
         val state = _uiState.value
 
-        // Validation for step 1 (Discipline/Custom Name)
         val titleStepIdx = if (state.isFirstRunOnboarding) 1 else 0
         if (state.stepIndex == titleStepIdx) {
             if (state.draft.habitName.isBlank()) {
@@ -142,9 +169,9 @@ class CreateHabitViewModel(
 
             val newHabitId = repository.addHabit(newHabit)
 
-            // If historical baseline > 0, log a historical foundation practice session
+            // If user has practiced before and baseline > 0, log initial foundation practice session
             val baselineMinutes = draft.calculatedBaselineMinutes
-            if (baselineMinutes > 0L) {
+            if (draft.hasPracticedBefore && baselineMinutes > 0L) {
                 val historicalSession = PracticeSession(
                     id = 0L,
                     habitId = newHabitId,

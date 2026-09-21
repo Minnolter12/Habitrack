@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,9 +25,17 @@ import androidx.compose.ui.unit.dp
 import com.minnolter.habitrack.domain.model.TimeRange
 import com.minnolter.habitrack.util.formatAccumulatedDuration
 
+private val HOME_DASHBOARD_TIME_RANGES = listOf(
+    TimeRange.LIFETIME,
+    TimeRange.TODAY,
+    TimeRange.WEEK,
+    TimeRange.MONTH,
+    TimeRange.YEAR
+)
+
 /**
  * The global dashboard header: displays the total hours invested, habit count subtitle,
- * and edge-to-edge glassmorphic range filter chips.
+ * and edge-to-edge glassmorphic range filter chips (Today, Week, Month, Year, Lifetime).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,10 +76,9 @@ fun DashboardSummaryHeader(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Padding inside row so scroll is edge-to-edge
             Text(text = "", modifier = Modifier.padding(start = 10.dp))
 
-            TimeRange.entries.forEach { range ->
+            HOME_DASHBOARD_TIME_RANGES.forEach { range ->
                 val isSelected = range == selectedRange
                 FilterChip(
                     selected = isSelected,
@@ -116,11 +122,11 @@ private fun habitCountLabel(habitCount: Int): String = when (habitCount) {
     else -> "Across $habitCount habits"
 }
 
-/** UI-facing labels for [TimeRange] */
+/** UI-facing labels for Home dashboard [TimeRange] */
 private fun TimeRange.displayLabel(): String = when (this) {
-    TimeRange.LIFETIME -> "Lifetime"
     TimeRange.TODAY -> "Today"
-    TimeRange.WEEK -> "This Week"
-    TimeRange.MONTH -> "This Month"
-    TimeRange.YEAR -> "This Year"
+    TimeRange.WEEK -> "Week"
+    TimeRange.MONTH -> "Month"
+    TimeRange.YEAR -> "Year"
+    TimeRange.LIFETIME -> "Lifetime"
 }

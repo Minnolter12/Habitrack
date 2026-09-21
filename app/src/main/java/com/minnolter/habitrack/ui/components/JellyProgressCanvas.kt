@@ -145,7 +145,7 @@ fun JellyProgressCanvas(
         val baseAmplitudePx = if (reduceMotion) {
             1.5.dp.toPx()
         } else {
-            11.dp.toPx() * waveAmplitudeFactor
+            13.dp.toPx() * waveAmplitudeFactor
         }
         val amplitudePx = if (isMasterStage) baseAmplitudePx * 0.3f else baseAmplitudePx
         val fillEdgeX = width * animatedProgress
@@ -157,7 +157,7 @@ fun JellyProgressCanvas(
             amplitude = amplitudePx,
             phase = wavePhase
         )
-        drawPath(path = primaryPath, color = stageColor.copy(alpha = 0.29f))
+        drawPath(path = primaryPath, color = stageColor.copy(alpha = 0.20f))
 
         // Secondary, slightly offset and quieter layer for parallax depth —
         // two waves out of phase read as "liquid" far more than one flat fill.
@@ -169,7 +169,7 @@ fun JellyProgressCanvas(
             amplitude = amplitudePx * 0.65f,
             phase = wavePhase + (PI / 2f).toFloat()
         )
-        drawPath(path = secondaryPath, color = stageColor.copy(alpha = 0.15f))
+        drawPath(path = secondaryPath, color = stageColor.copy(alpha = 0.10f))
 
         if (isMasterStage) {
             if (!reduceMotion) {

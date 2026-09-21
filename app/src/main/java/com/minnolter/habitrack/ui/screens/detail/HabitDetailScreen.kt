@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -421,39 +422,22 @@ private fun StreakBadgeCard(
     currentStreakDays: Int,
     longestStreakDays: Int
 ) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0x22FF6D00),
-        border = BorderStroke(1.dp, Color(0x44FF9100))
+            .padding(horizontal = 24.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "🔥 ",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Column {
-                    Text(
-                        text = "$currentStreakDays Day Streak",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Longest Streak: $longestStreakDays days",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.75f)
-                    )
-                }
-            }
-        }
+        Text(
+            text = "🔥 ",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "Longest Streak: $longestStreakDays days",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
     }
 }
 
@@ -648,60 +632,60 @@ private fun DistributionBarChart(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SessionRow(
     session: SessionListItem,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDelete()
-                true
-            } else {
-                false
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0x18FFFFFF))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = formatSessionDateLabel(session.timestamp),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+            if (!session.note.isNullOrBlank()) {
+                Text(
+                    text = session.note,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.65f),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
         }
-    )
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xAAFF5252))
-                    .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = formatExactDuration(session.durationMinutes.toLong()),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF00E5FF),
+                modifier = Modifier.padding(end = 8.dp)
+            )
+
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "Delete session",
-                    tint = Color.White
+                    tint = Color.White.copy(alpha = 0.65f),
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
-    ) {
-        ListItem(
-            headlineContent = { Text(formatSessionDateLabel(session.timestamp), color = Color.White, fontWeight = FontWeight.SemiBold) },
-            supportingContent = session.note?.takeIf { it.isNotBlank() }?.let { note ->
-                { Text(text = note, color = Color.White.copy(alpha = 0.65f)) }
-            },
-            trailingContent = {
-                Text(
-                    text = formatExactDuration(session.durationMinutes.toLong()),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF00E5FF)
-                )
-            },
-            colors = ListItemDefaults.colors(containerColor = Color(0x1EFFFFFF)),
-            modifier = Modifier
-                .clickable(onClick = onClick)
-                .clip(RoundedCornerShape(12.dp))
-        )
     }
 }
 
