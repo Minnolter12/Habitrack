@@ -93,27 +93,14 @@ fun StepExperience(
             }
 
             EstimationMode.DIRECT_HOURS -> {
-                Row(
+                OutlinedTextField(
+                    value = if (draft.timespanYears > 0) draft.timespanYears.toString() else "",
+                    onValueChange = { val h = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(timespanYears = h) } },
+                    label = { Text("Years") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = if (draft.knownHours > 0) draft.knownHours.toString() else "",
-                        onValueChange = { val h = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(knownHours = h) } },
-                        label = { Text("Hours") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        colors = fieldColors()
-                    )
-                    OutlinedTextField(
-                        value = if (draft.knownMinutes > 0) draft.knownMinutes.toString() else "",
-                        onValueChange = { val m = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(knownMinutes = m) } },
-                        label = { Text("Minutes") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        colors = fieldColors()
-                    )
-                }
+                    colors = fieldColors()
+                )
             }
 
             EstimationMode.HISTORICAL_CALCULATOR -> {
@@ -122,17 +109,17 @@ fun StepExperience(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedTextField(
-                        value = if (draft.yearsPracticed > 0) draft.yearsPracticed.toString() else "",
-                        onValueChange = { val y = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(yearsPracticed = y) } },
+                        value = if (draft.timespanYears > 0) draft.timespanYears.toString() else "",
+                        onValueChange = { val y = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(timespanYears = y) } },
                         label = { Text("Years Practiced") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         colors = fieldColors()
                     )
                     OutlinedTextField(
-                        value = if (draft.breakValue > 0) draft.breakValue.toString() else "",
-                        onValueChange = { val m = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(breakValue = m) } },
-                        label = { Text("Break Duration") },
+                        value = if (draft.offTimeYears > 0) draft.offTimeYears.toString() else "",
+                        onValueChange = { val m = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(offTimeYears = m) } },
+                        label = { Text("Break Years") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         colors = fieldColors()
@@ -154,8 +141,8 @@ fun StepExperience(
                         colors = fieldColors()
                     )
                     OutlinedTextField(
-                        value = if (draft.hoursPerSession > 0f) draft.hoursPerSession.toString() else "",
-                        onValueChange = { val hrs = it.toFloatOrNull() ?: 0f; onDraftChanged { d -> d.copy(hoursPerSession = hrs) } },
+                        value = if (draft.minutesPerSession > 0) (draft.minutesPerSession / 60).toString() else "",
+                        onValueChange = { val hrs = it.toIntOrNull() ?: 0; onDraftChanged { d -> d.copy(minutesPerSession = hrs * 60) } },
                         label = { Text("Hours/Session") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
@@ -166,14 +153,14 @@ fun StepExperience(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Consistency Factor: ${(draft.consistencyFactor * 100).toInt()}% (Accounts for off-weeks/breaks)",
+                    text = "Consistency Factor: ${draft.consistencyPercentage}% (Accounts for off-weeks/breaks)",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.8f)
                 )
                 Slider(
-                    value = draft.consistencyFactor,
-                    onValueChange = { factor -> onDraftChanged { d -> d.copy(consistencyFactor = factor) } },
-                    valueRange = 0.5f..1.0f,
+                    value = draft.consistencyPercentage.toFloat(),
+                    onValueChange = { factor -> onDraftChanged { d -> d.copy(consistencyPercentage = factor.toInt()) } },
+                    valueRange = 50f..100f,
                     colors = SliderDefaults.colors(
                         thumbColor = Color(0xFF00E5FF),
                         activeTrackColor = Color(0xFF7C4DFF)

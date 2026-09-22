@@ -54,10 +54,11 @@ fun StepRoutine(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedTextField(
-                value = schedule.sessionDurationHours.toString(),
+                value = (schedule.sessionDurationMinutes / 60.0).toString(),
                 onValueChange = {
-                    val hrs = it.toFloatOrNull() ?: 0f
-                    onDraftChanged { d -> d.copy(scheduleExpectation = schedule.copy(sessionDurationHours = hrs)) }
+                    val hrs = it.toDoubleOrNull() ?: 0.0
+                    val mins = (hrs * 60.0).toInt().coerceIn(0, 1440)
+                    onDraftChanged { d -> d.copy(scheduleExpectation = schedule.copy(sessionDurationMinutes = mins)) }
                 },
                 label = { Text("Target Hours/Session") },
                 singleLine = true,

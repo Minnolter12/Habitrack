@@ -31,14 +31,21 @@ data class CreateHabitWizardUiState(
 ) {
     val currentStagePreview: ProgressionStage get() = draft.calculatedStage
 
-    /** Returns whether the Continue button should be enabled for the current step. */
+    /** Returns whether the Continue button should be enabled for the active step. */
     val isCurrentStepValid: Boolean
         get() {
-            val titleStepIdx = if (isFirstRunOnboarding) 1 else 0
-            if (stepIndex == titleStepIdx) {
-                return draft.habitName.isNotBlank()
+            val actualStep = if (isFirstRunOnboarding) stepIndex else stepIndex + 1
+            return when (actualStep) {
+                0 -> true // Intro
+                1 -> draft.habitName.isNotBlank() // Title
+                2 -> true // Has practiced before check
+                3 -> draft.isTimespanValid // Q1: Timespan (must have at least one non-zero input)
+                4 -> draft.isOffTimeValid // Q2: Off-time (break weeks <= gross active weeks)
+                5 -> draft.isCadenceValid // Q3 & Q4: Cadence (sessions/week & session duration > 0)
+                6 -> true // Consistency factor slider
+                7 -> true // Fine-tuning slider
+                else -> true
             }
-            return true
         }
 }
 
@@ -72,14 +79,21 @@ class CreateHabitViewModel(
 
     fun selectPresetActivity(preset: PresetActivity) {
         _uiState.update {
+            // In custom habit mode, selecting a preset icon/photo ONLY updates imageUrl and colorHex,
+            // preserving custom typed habitName!
+            val habitName = if (it.draft.isCustomHabit && it.draft.habitName.isNotBlank()) {
+                it.draft.habitName
+            } else {
+                preset.name
+            }
+
             it.copy(
-                searchQuery = preset.name,
+                searchQuery = habitName,
                 draft = it.draft.copy(
-                    habitName = preset.name,
+                    habitName = habitName,
                     category = preset.category,
                     colorHex = preset.defaultColorHex,
-                    imageUrl = preset.imageUrl,
-                    isCustomHabit = false
+                    imageUrl = preset.imageUrl
                 )
             )
         }
@@ -112,7 +126,6 @@ class CreateHabitViewModel(
         }
 
         if (!hasPracticed) {
-            // Directly save habit with 0 hours logged!
             saveHabit(onFinished)
         } else {
             goToNextStep()
@@ -128,6 +141,11 @@ class CreateHabitViewModel(
                 _uiState.update { it.copy(validationError = "Please enter or select a habit name") }
                 return false
             }
+        }
+
+        if (!state.isCurrentStepValid) {
+            _uiState.update { it.copy(validationError = "Please complete the required input fields before continuing.") }
+            return false
         }
 
         if (state.stepIndex < state.totalSteps - 1) {

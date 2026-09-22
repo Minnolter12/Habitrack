@@ -31,7 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -50,12 +49,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.minnolter.habitrack.domain.model.BreakUnit
 import com.minnolter.habitrack.domain.model.EstimationMode
 import com.minnolter.habitrack.domain.model.HabitCreationDraft
 import com.minnolter.habitrack.ui.screens.create.steps.IntroStep
 import com.minnolter.habitrack.ui.screens.create.steps.StepDiscipline
 import com.minnolter.habitrack.util.formatAccumulatedDuration
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,39 +170,40 @@ fun CreateHabitWizardScreen(
                             viewModel.setHasPracticedBefore(hasPracticed, onFinished)
                         }
                     )
-                    3 -> QuestionNumericPage(
-                        title = "Question 1 of 4: Prior Years",
-                        question = "How many years do you think you have practiced ${uiState.draft.habitName}?",
-                        value = if (uiState.draft.yearsPracticed > 0) uiState.draft.yearsPracticed.toString() else "",
-                        placeholder = "e.g., 2",
-                        onValueChanged = { val y = (it.toIntOrNull() ?: 0).coerceIn(0, 100); viewModel.updateDraft { d -> d.copy(yearsPracticed = y) } }
+                    3 -> QuestionTimespanPage(
+                        habitName = uiState.draft.habitName,
+                        years = uiState.draft.timespanYears,
+                        months = uiState.draft.timespanMonths,
+                        weeks = uiState.draft.timespanWeeks,
+                        onYearsChanged = { y -> viewModel.updateDraft { d -> d.copy(timespanYears = y) } },
+                        onMonthsChanged = { m -> viewModel.updateDraft { d -> d.copy(timespanMonths = m.coerceIn(0, 11)) } },
+                        onWeeksChanged = { w -> viewModel.updateDraft { d -> d.copy(timespanWeeks = w.coerceIn(0, 4)) } }
                     )
-                    4 -> QuestionBreakPage(
-                        breakValue = uiState.draft.breakValue,
-                        breakUnit = uiState.draft.breakUnit,
-                        onBreakValueChanged = { v -> viewModel.updateDraft { d -> d.copy(breakValue = v) } },
-                        onBreakUnitChanged = { u -> viewModel.updateDraft { d -> d.copy(breakUnit = u) } }
+                    4 -> QuestionOffTimePage(
+                        years = uiState.draft.offTimeYears,
+                        months = uiState.draft.offTimeMonths,
+                        weeks = uiState.draft.offTimeWeeks,
+                        isExceedingGross = !uiState.draft.isOffTimeValid,
+                        onYearsChanged = { y -> viewModel.updateDraft { d -> d.copy(offTimeYears = y) } },
+                        onMonthsChanged = { m -> viewModel.updateDraft { d -> d.copy(offTimeMonths = m.coerceIn(0, 11)) } },
+                        onWeeksChanged = { w -> viewModel.updateDraft { d -> d.copy(offTimeWeeks = w.coerceIn(0, 4)) } }
                     )
-                    5 -> QuestionNumericPage(
-                        title = "Question 3 of 4: Weekly Frequency",
-                        question = "How many days per week do you usually practice?",
-                        value = if (uiState.draft.sessionsPerWeek > 0) uiState.draft.sessionsPerWeek.toString() else "",
-                        placeholder = "e.g., 4",
-                        onValueChanged = { val s = (it.toIntOrNull() ?: 0).coerceIn(0, 7); viewModel.updateDraft { d -> d.copy(sessionsPerWeek = s) } }
+                    5 -> QuestionCadencePage(
+                        sessionsPerWeek = uiState.draft.sessionsPerWeek,
+                        minutesPerSession = uiState.draft.minutesPerSession,
+                        onSessionsChanged = { s -> viewModel.updateDraft { d -> d.copy(sessionsPerWeek = s) } },
+                        onMinutesChanged = { m -> viewModel.updateDraft { d -> d.copy(minutesPerSession = m) } }
                     )
-                    6 -> QuestionDecimalPage(
-                        title = "Question 4 of 4: Session Duration",
-                        question = "How many hours per session on average?",
-                        value = if (uiState.draft.hoursPerSession > 0f) uiState.draft.hoursPerSession.toString().removeSuffix(".0") else "",
-                        placeholder = "e.g., 1.5",
-                        onValueChanged = { val hrs = (it.toFloatOrNull() ?: 0f).coerceIn(0f, 24f); viewModel.updateDraft { d -> d.copy(hoursPerSession = hrs) } }
+                    6 -> QuestionConsistencyPage(
+                        consistencyPercentage = uiState.draft.consistencyPercentage,
+                        onConsistencyChanged = { c -> viewModel.updateDraft { d -> d.copy(consistencyPercentage = c) } }
                     )
                     7 -> FineTuneSliderPage(
                         draft = uiState.draft,
-                        onHoursChanged = { hours ->
+                        onAdjustmentChanged = { deltaHours ->
                             viewModel.updateDraft { d ->
                                 d.copy(
-                                    manualOverrideHours = hours,
+                                    manualAdjustmentHours = deltaHours,
                                     estimationMode = EstimationMode.MANUAL_SLIDER
                                 )
                             }
@@ -278,11 +278,14 @@ private fun ChoiceCard(text: String, subtext: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun QuestionBreakPage(
-    breakValue: Int,
-    breakUnit: BreakUnit,
-    onBreakValueChanged: (Int) -> Unit,
-    onBreakUnitChanged: (BreakUnit) -> Unit
+private fun QuestionTimespanPage(
+    habitName: String,
+    years: Int,
+    months: Int,
+    weeks: Int,
+    onYearsChanged: (Int) -> Unit,
+    onMonthsChanged: (Int) -> Unit,
+    onWeeksChanged: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -290,7 +293,7 @@ private fun QuestionBreakPage(
             .padding(horizontal = 24.dp, vertical = 20.dp)
     ) {
         Text(
-            text = "Question 2 of 4: Off-Time & Breaks",
+            text = "Question 1 of 4: Total Timespan",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF00E5FF)
@@ -299,66 +302,166 @@ private fun QuestionBreakPage(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "How long have you taken a break from this activity?",
+            text = "How much time have you spent practicing $habitName?",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = Color.White
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // Unit selector chips
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            BreakUnit.entries.forEach { unit ->
-                val isSelected = unit == breakUnit
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) Color(0x447C4DFF) else Color(0x14FFFFFF))
-                        .clickable { onBreakUnitChanged(unit) }
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = unit.label,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f)
-                    )
-                }
-            }
+            OutlinedTextField(
+                value = if (years > 0) years.toString() else "",
+                onValueChange = { input ->
+                    val y = input.filter { it.isDigit() }.toIntOrNull() ?: 0
+                    onYearsChanged(y)
+                },
+                label = { Text("Years") },
+                placeholder = { Text("0") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
+
+            OutlinedTextField(
+                value = if (months > 0) months.toString() else "",
+                onValueChange = { input ->
+                    val m = (input.filter { it.isDigit() }.toIntOrNull() ?: 0).coerceIn(0, 11)
+                    onMonthsChanged(m)
+                },
+                label = { Text("Months (0-11)") },
+                placeholder = { Text("0") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
+
+            OutlinedTextField(
+                value = if (weeks > 0) weeks.toString() else "",
+                onValueChange = { input ->
+                    val w = (input.filter { it.isDigit() }.toIntOrNull() ?: 0).coerceIn(0, 4)
+                    onWeeksChanged(w)
+                },
+                label = { Text("Weeks (0-4)") },
+                placeholder = { Text("0") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuestionOffTimePage(
+    years: Int,
+    months: Int,
+    weeks: Int,
+    isExceedingGross: Boolean,
+    onYearsChanged: (Int) -> Unit,
+    onMonthsChanged: (Int) -> Unit,
+    onWeeksChanged: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+    ) {
+        Text(
+            text = "Question 2 of 4: Breaks & Off-Time",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF00E5FF)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "How much total off-time, long breaks, or hiatuses did you take during this period?",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            OutlinedTextField(
+                value = if (years > 0) years.toString() else "",
+                onValueChange = { input ->
+                    val y = input.filter { it.isDigit() }.toIntOrNull() ?: 0
+                    onYearsChanged(y)
+                },
+                label = { Text("Years") },
+                placeholder = { Text("0") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
+
+            OutlinedTextField(
+                value = if (months > 0) months.toString() else "",
+                onValueChange = { input ->
+                    val m = (input.filter { it.isDigit() }.toIntOrNull() ?: 0).coerceIn(0, 11)
+                    onMonthsChanged(m)
+                },
+                label = { Text("Months (0-11)") },
+                placeholder = { Text("0") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
+
+            OutlinedTextField(
+                value = if (weeks > 0) weeks.toString() else "",
+                onValueChange = { input ->
+                    val w = (input.filter { it.isDigit() }.toIntOrNull() ?: 0).coerceIn(0, 4)
+                    onWeeksChanged(w)
+                },
+                label = { Text("Weeks (0-4)") },
+                placeholder = { Text("0") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = if (breakValue > 0) breakValue.toString() else "",
-            onValueChange = { input ->
-                val v = (input.filter { it.isDigit() }.toIntOrNull() ?: 0).coerceAtMost(100)
-                onBreakValueChanged(v)
-            },
-            placeholder = { Text("e.g., 6") },
-            label = { Text("Break duration in ${breakUnit.label}") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors()
-        )
+        if (isExceedingGross) {
+            Text(
+                text = "Off-time cannot exceed total timespan entered in Question 1.",
+                color = Color(0xFFFF5252),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 12.dp)
+            )
+        }
     }
 }
 
 @Composable
-private fun QuestionDecimalPage(
-    title: String,
-    question: String,
-    value: String,
-    placeholder: String,
-    onValueChanged: (String) -> Unit
+private fun QuestionCadencePage(
+    sessionsPerWeek: Int,
+    minutesPerSession: Int,
+    onSessionsChanged: (Int) -> Unit,
+    onMinutesChanged: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -366,7 +469,7 @@ private fun QuestionDecimalPage(
             .padding(horizontal = 24.dp, vertical = 20.dp)
     ) {
         Text(
-            text = title,
+            text = "Question 3 of 4: Practice Cadence",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF00E5FF)
@@ -375,37 +478,57 @@ private fun QuestionDecimalPage(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = question,
+            text = "How often and how long do you usually practice?",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = Color.White
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        OutlinedTextField(
-            value = value,
-            onValueChange = { input ->
-                val validDecimal = input.filter { it.isDigit() || it == '.' }
-                onValueChanged(validDecimal)
-            },
-            placeholder = { Text(placeholder) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            shape = RoundedCornerShape(16.dp),
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors()
-        )
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = if (sessionsPerWeek > 0) sessionsPerWeek.toString() else "",
+                onValueChange = { input ->
+                    val s = (input.filter { it.isDigit() }.toIntOrNull() ?: 0).coerceIn(0, 7)
+                    onSessionsChanged(s)
+                },
+                label = { Text("Sessions / Week") },
+                placeholder = { Text("e.g. 3") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
+
+            val sessionHours = minutesPerSession / 60.0
+            OutlinedTextField(
+                value = if (minutesPerSession > 0) String.format(Locale.US, "%.1f", sessionHours).removeSuffix(".0") else "",
+                onValueChange = { input ->
+                    val hrs = input.toFloatOrNull() ?: 0f
+                    val mins = (hrs * 60f).toInt().coerceIn(0, 1440)
+                    onMinutesChanged(mins)
+                },
+                label = { Text("Hours / Session") },
+                placeholder = { Text("e.g. 1.5") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f),
+                colors = fieldColors()
+            )
+        }
     }
 }
 
 @Composable
-private fun QuestionNumericPage(
-    title: String,
-    question: String,
-    value: String,
-    placeholder: String,
-    onValueChanged: (String) -> Unit
+private fun QuestionConsistencyPage(
+    consistencyPercentage: Int,
+    onConsistencyChanged: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -413,7 +536,7 @@ private fun QuestionNumericPage(
             .padding(horizontal = 24.dp, vertical = 20.dp)
     ) {
         Text(
-            text = title,
+            text = "Question 4 of 4: Consistency Factor",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF00E5FF)
@@ -422,26 +545,40 @@ private fun QuestionNumericPage(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = question,
+            text = "What is your typical practice consistency factor?",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = Color.White
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = value,
-            onValueChange = { input ->
-                val digitsOnly = input.filter { it.isDigit() }
-                onValueChanged(digitsOnly)
-            },
-            placeholder = { Text(placeholder) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors()
+        Text(
+            text = "Accounts for minor missed days, holidays, travel, and sick days.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.70f)
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Text(
+            text = "$consistencyPercentage% Consistency",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF00E5FF)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Slider(
+            value = consistencyPercentage.toFloat(),
+            onValueChange = { onConsistencyChanged(it.toInt()) },
+            valueRange = 50f..100f,
+            steps = 50,
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFF00E5FF),
+                activeTrackColor = Color(0xFF7C4DFF)
+            )
         )
     }
 }
@@ -449,11 +586,14 @@ private fun QuestionNumericPage(
 @Composable
 private fun FineTuneSliderPage(
     draft: HabitCreationDraft,
-    onHoursChanged: (Float) -> Unit
+    onAdjustmentChanged: (Long) -> Unit
 ) {
-    val baselineMins = draft.calculatedBaselineMinutes
-    val currentHours = (baselineMins / 60f).coerceAtMost(10_000f)
+    val calculatedBaseHours = draft.calculatedBaseHours
+    val fineTunedHours = draft.fineTunedBaseHours
     val stage = draft.calculatedStage
+
+    val minAllowed = draft.minAllowedHours
+    val maxAllowed = draft.maxAllowedHours
 
     Column(
         modifier = Modifier
@@ -470,7 +610,7 @@ private fun FineTuneSliderPage(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Drag the slider to adjust your starting hours. Be honest!",
+            text = "Estimated Foundation: ~${calculatedBaseHours}h. Adjust within allowed bounds (±100h).",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.80f)
         )
@@ -493,7 +633,7 @@ private fun FineTuneSliderPage(
                     color = Color.White.copy(alpha = 0.6f)
                 )
                 Text(
-                    text = formatAccumulatedDuration(baselineMins),
+                    text = formatAccumulatedDuration(draft.calculatedBaselineMinutes),
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -510,15 +650,28 @@ private fun FineTuneSliderPage(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Slider(
-            value = currentHours,
-            onValueChange = onHoursChanged,
-            valueRange = 0f..10000f,
-            colors = SliderDefaults.colors(
-                thumbColor = Color(0xFF00E5FF),
-                activeTrackColor = Color(0xFF7C4DFF)
+        if (minAllowed < maxAllowed) {
+            Slider(
+                value = fineTunedHours.toFloat(),
+                onValueChange = { fineTuned ->
+                    val delta = fineTuned.toLong() - calculatedBaseHours
+                    onAdjustmentChanged(delta)
+                },
+                valueRange = minAllowed.toFloat()..maxAllowed.toFloat(),
+                colors = SliderDefaults.colors(
+                    thumbColor = Color(0xFF00E5FF),
+                    activeTrackColor = Color(0xFF7C4DFF)
+                )
             )
-        )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = "Min: ${minAllowed}h", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+                Text(text = "Max: ${maxAllowed}h", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+            }
+        }
     }
 }
 
