@@ -130,7 +130,7 @@ fun HabitractNavHost(
 
         composable<Destination.Settings> {
             val settingsViewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModelFactory(settingsDataStore, backupManager)
+                factory = SettingsViewModelFactory(repository, settingsDataStore, backupManager)
             )
 
             SettingsRoute(

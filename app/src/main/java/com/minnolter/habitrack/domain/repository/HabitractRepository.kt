@@ -62,6 +62,8 @@ interface HabitractRepository {
 
     // ---- Cross-habit (dashboard) aggregates ----
 
+    suspend fun resetAllData()
+
     fun observeTotalMinutes(range: TimeRange): Flow<Int>
 
     fun observeTotalSessionCount(): Flow<Int>

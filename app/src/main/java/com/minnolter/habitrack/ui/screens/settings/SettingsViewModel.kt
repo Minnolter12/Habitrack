@@ -8,6 +8,7 @@ import com.minnolter.habitrack.data.local.DatabaseBackupManager
 import com.minnolter.habitrack.data.local.datastore.AppSettings
 import com.minnolter.habitrack.data.local.datastore.SettingsDataStore
 import com.minnolter.habitrack.domain.model.ThemeMode
+import com.minnolter.habitrack.domain.repository.HabitractRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ sealed interface BackupOperationState {
 }
 
 class SettingsViewModel(
+    private val repository: HabitractRepository,
     private val settingsDataStore: SettingsDataStore,
     private val backupManager: DatabaseBackupManager
 ) : ViewModel() {
@@ -83,7 +85,8 @@ class SettingsViewModel(
     fun resetEntireApp(onFinished: () -> Unit) {
         viewModelScope.launch {
             _backupState.value = BackupOperationState.InProgress
-            settingsDataStore.setHasCompletedOnboarding(false)
+            repository.resetAllData()
+            settingsDataStore.clearAllSettings()
             _backupState.value = BackupOperationState.ImportSucceeded(
                 message = "App reset complete. Restart to finish.",
                 pendingRestart = true
@@ -98,6 +101,7 @@ class SettingsViewModel(
 }
 
 class SettingsViewModelFactory(
+    private val repository: HabitractRepository,
     private val settingsDataStore: SettingsDataStore,
     private val backupManager: DatabaseBackupManager
 ) : ViewModelProvider.Factory {
@@ -106,6 +110,6 @@ class SettingsViewModelFactory(
             "Unknown ViewModel class: $modelClass"
         }
         @Suppress("UNCHECKED_CAST")
-        return SettingsViewModel(settingsDataStore, backupManager) as T
+        return SettingsViewModel(repository, settingsDataStore, backupManager) as T
     }
 }

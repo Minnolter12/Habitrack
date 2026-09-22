@@ -22,6 +22,9 @@ interface PracticeSessionDao {
     @Delete
     suspend fun delete(session: PracticeSessionEntity)
 
+    @Query("DELETE FROM practice_sessions")
+    suspend fun deleteAll()
+
     /**
      * Added in Phase 5: swipe-to-delete on the Habit Detail screen's session
      * history only has a session id on hand, not a full loaded entity.

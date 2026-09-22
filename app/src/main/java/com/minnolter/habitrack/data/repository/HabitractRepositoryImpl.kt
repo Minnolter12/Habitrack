@@ -98,6 +98,11 @@ class HabitractRepositoryImpl(
 
     // ---- Cross-habit (dashboard) aggregates ----
 
+    override suspend fun resetAllData() {
+        practiceSessionDao.deleteAll()
+        habitDao.deleteAll()
+    }
+
     override fun observeTotalMinutes(range: TimeRange): Flow<Int> {
         if (range == TimeRange.LIFETIME) {
             return practiceSessionDao.observeLifetimeMinutesTotal()

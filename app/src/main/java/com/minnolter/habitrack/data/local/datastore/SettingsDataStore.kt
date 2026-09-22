@@ -49,6 +49,10 @@ class SettingsDataStore(private val context: Context) {
         context.settingsDataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = completed }
     }
 
+    suspend fun clearAllSettings() {
+        context.settingsDataStore.edit { it.clear() }
+    }
+
     private companion object {
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val REDUCED_MOTION_KEY = booleanPreferencesKey("reduced_motion_forced")

@@ -50,7 +50,7 @@ private fun HabitractRoot(
     backupManager: DatabaseBackupManager
 ) {
     val settingsViewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModelFactory(settingsDataStore, backupManager)
+        factory = SettingsViewModelFactory(repository, settingsDataStore, backupManager)
     )
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
 
