@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+private val PracticeSession.isBaseline: Boolean
+    get() = (timestamp == Instant.EPOCH) || (note != null && note.startsWith("Historical baseline", ignoreCase = true))
+
 class HabitDetailViewModel(
     private val habitId: Long,
     private val repository: HabitractRepository,
@@ -74,6 +77,8 @@ class HabitDetailViewModel(
     ): HabitDetailUiState {
         val habit = aggregates.habit
         val sessions = aggregates.sessions
+        val userSessions = sessions.filter { !it.isBaseline }
+
         val lifetimeMinutes = sessions.sumOf { it.durationMinutes.toLong() }
         val now = Instant.now()
 
@@ -81,20 +86,23 @@ class HabitDetailViewModel(
             lifetimeMinutes
         } else {
             val bounds = dateRangeProvider.boundsFor(range, now)
-            sessions.filter { session ->
+            userSessions.filter { session ->
                 val epochMillis = session.timestamp.toEpochMilli()
                 epochMillis in bounds.startEpochMillis..bounds.endEpochMillis
             }.sumOf { it.durationMinutes.toLong() }
         }
 
-        val averageSessionMinutes = if (aggregates.sessionCount > 0) {
-            lifetimeMinutes / aggregates.sessionCount
+        val userSessionCount = userSessions.size
+        val averageSessionMinutes = if (userSessionCount > 0) {
+            userSessions.sumOf { it.durationMinutes.toLong() } / userSessionCount
         } else {
             0L
         }
 
-        val (currentStreak, longestStreak) = calculateStreaks(sessions, zoneId)
-        val bestDay = calculateBestDayOfWeek(sessions, zoneId)
+        val longestSessionMinutes = userSessions.maxOfOrNull { it.durationMinutes.toLong() } ?: 0L
+
+        val (currentStreak, longestStreak) = calculateStreaks(userSessions, zoneId)
+        val bestDay = calculateBestDayOfWeek(userSessions, zoneId)
 
         return HabitDetailUiState(
             isLoading = false,
@@ -110,14 +118,14 @@ class HabitDetailViewModel(
             visualProgress = ProgressionStage.calculateVisualProgress(lifetimeMinutes),
             selectedRange = range,
             filteredMinutes = filteredMinutes,
-            distributionBuckets = buildDistributionBuckets(sessions, range, now),
-            sessionCount = aggregates.sessionCount,
+            distributionBuckets = buildDistributionBuckets(if (range == TimeRange.LIFETIME) sessions else userSessions, range, now),
+            sessionCount = userSessionCount,
             averageSessionMinutes = averageSessionMinutes,
-            longestSessionMinutes = aggregates.longestSession?.durationMinutes?.toLong() ?: 0L,
+            longestSessionMinutes = longestSessionMinutes,
             currentStreakDays = currentStreak,
             longestStreakDays = longestStreak,
             bestPracticeDayOfWeek = bestDay,
-            recentSessions = sessions
+            recentSessions = userSessions
                 .sortedByDescending { it.timestamp }
                 .take(MAX_RECENT_SESSIONS)
                 .map { SessionListItem(it.id, it.timestamp, it.durationMinutes, it.note) },

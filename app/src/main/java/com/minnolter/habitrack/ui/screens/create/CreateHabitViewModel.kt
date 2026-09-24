@@ -79,8 +79,6 @@ class CreateHabitViewModel(
 
     fun selectPresetActivity(preset: PresetActivity) {
         _uiState.update {
-            // In custom habit mode, selecting a preset icon/photo ONLY updates imageUrl and colorHex,
-            // preserving custom typed habitName!
             val habitName = if (it.draft.isCustomHabit && it.draft.habitName.isNotBlank()) {
                 it.draft.habitName
             } else {
@@ -187,14 +185,14 @@ class CreateHabitViewModel(
 
             val newHabitId = repository.addHabit(newHabit)
 
-            // If user has practiced before and baseline > 0, log initial foundation practice session
+            // Log initial historical baseline foundation timestamped at Instant.EPOCH so it never skews Today/Week/Month/Year or session averages!
             val baselineMinutes = draft.calculatedBaselineMinutes
             if (draft.hasPracticedBefore && baselineMinutes > 0L) {
                 val historicalSession = PracticeSession(
                     id = 0L,
                     habitId = newHabitId,
                     durationMinutes = baselineMinutes.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-                    timestamp = Instant.now(),
+                    timestamp = Instant.EPOCH,
                     note = "Historical baseline foundation"
                 )
                 repository.logSession(historicalSession)
