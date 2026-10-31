@@ -77,7 +77,7 @@ fun HabitractNavHost(
         composable<Destination.Home> { backStackEntry ->
             val homeViewModel: HomeViewModel = viewModel(
                 viewModelStoreOwner = backStackEntry,
-                factory = HomeViewModelFactory(repository)
+                factory = HomeViewModelFactory(repository, settingsDataStore)
             )
 
             HomeRoute(
@@ -138,7 +138,7 @@ fun HabitractNavHost(
                 onBack = { navController.popBackStack() },
                 onReorderHabitsClick = {
                     navController.previousBackStackEntry?.let { homeEntry ->
-                        ViewModelProvider(homeEntry, HomeViewModelFactory(repository))
+                        ViewModelProvider(homeEntry, HomeViewModelFactory(repository, settingsDataStore))
                             .get(HomeViewModel::class.java)
                             .enterReorderMode()
                     }

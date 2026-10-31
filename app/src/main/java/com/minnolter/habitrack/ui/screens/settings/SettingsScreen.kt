@@ -35,6 +35,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -103,6 +105,8 @@ fun SettingsRoute(
         onBack = onBack,
         onReducedMotionChanged = viewModel::setReducedMotionForced,
         onFeedbackChanged = viewModel::setFeedbackEnabled,
+        onFluidOpacityChanged = viewModel::setFluidOpacity,
+        onImageOpacityChanged = viewModel::setImageOpacity,
         onReorderHabitsClick = onReorderHabitsClick,
         onExportClick = { exportLauncher.launch(defaultBackupFileName()) },
         onImportClick = {
@@ -126,6 +130,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onReducedMotionChanged: (Boolean) -> Unit,
     onFeedbackChanged: (Boolean) -> Unit,
+    onFluidOpacityChanged: (Float) -> Unit = {},
+    onImageOpacityChanged: (Float) -> Unit = {},
     onReorderHabitsClick: () -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -196,6 +202,61 @@ fun SettingsScreen(
                         )
                     }
                 )
+            }
+
+            item { HorizontalDivider() }
+            item { SectionHeader("Card Opacity & Customization") }
+            item {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Card Fluid Fill Opacity", fontWeight = FontWeight.Medium)
+                        Text(
+                            text = "${(settings.fluidOpacity * 100).toInt()}%",
+                            color = Color(0xFF00E5FF),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Slider(
+                        value = settings.fluidOpacity,
+                        onValueChange = onFluidOpacityChanged,
+                        valueRange = 0f..1f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color(0xFF00E5FF),
+                            activeTrackColor = Color(0xFF00E5FF)
+                        ),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+            item {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Card Background Image Opacity", fontWeight = FontWeight.Medium)
+                        Text(
+                            text = "${(settings.imageOpacity * 100).toInt()}%",
+                            color = Color(0xFF00E5FF),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Slider(
+                        value = settings.imageOpacity,
+                        onValueChange = onImageOpacityChanged,
+                        valueRange = 0f..1f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color(0xFF00E5FF),
+                            activeTrackColor = Color(0xFF00E5FF)
+                        ),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
 
             item { HorizontalDivider() }

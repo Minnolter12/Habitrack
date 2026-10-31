@@ -3,6 +3,8 @@ package com.minnolter.habitrack.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.minnolter.habitrack.data.local.datastore.AppSettings
+import com.minnolter.habitrack.data.local.datastore.SettingsDataStore
 import com.minnolter.habitrack.domain.model.Habit
 import com.minnolter.habitrack.domain.model.PracticeSession
 import com.minnolter.habitrack.domain.model.ProgressionStage
@@ -23,22 +25,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Drives the Home screen: the global dashboard (Sections 9–10) and the
- * habit list (Section 12). All business logic — range resolution, stage
- * derivation, visual progress — lives here; the Composable layer only ever
- * renders [uiState].
- *
- * [dateRangeProvider] isn't called directly by this ViewModel today (range
- * resolution happens inside [HabitractRepository]'s implementation), but is
- * accepted here so a future range-aware, ViewModel-side computation (e.g. a
- * "custom range" filter) doesn't require changing the constructor again.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val repository: HabitractRepository,
+    private val settingsDataStore: SettingsDataStore,
     private val dateRangeProvider: DateRangeProvider = DateRangeProvider()
 ) : ViewModel() {
+
+    val settings: StateFlow<AppSettings> = settingsDataStore.settings.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
+        initialValue = AppSettings()
+    )
 
     private val selectedTimeRange = MutableStateFlow(TimeRange.LIFETIME)
 
@@ -182,6 +180,7 @@ class HomeViewModel(
  */
 class HomeViewModelFactory(
     private val repository: HabitractRepository,
+    private val settingsDataStore: SettingsDataStore,
     private val dateRangeProvider: DateRangeProvider = DateRangeProvider()
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -189,6 +188,6 @@ class HomeViewModelFactory(
             "Unknown ViewModel class: $modelClass"
         }
         @Suppress("UNCHECKED_CAST")
-        return HomeViewModel(repository, dateRangeProvider) as T
+        return HomeViewModel(repository, settingsDataStore, dateRangeProvider) as T
     }
 }

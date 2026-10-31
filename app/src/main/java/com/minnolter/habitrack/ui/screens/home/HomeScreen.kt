@@ -67,12 +67,15 @@ fun HomeRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isReorderMode by viewModel.isReorderMode.collectAsStateWithLifecycle()
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
     var habitPendingLog by remember { mutableStateOf<HabitSummary?>(null) }
     var pendingOrder by remember { mutableStateOf<List<Long>?>(null) }
 
     HomeScreen(
         uiState = uiState,
         isReorderMode = isReorderMode,
+        fluidOpacity = settings.fluidOpacity,
+        imageOpacity = settings.imageOpacity,
         onTimeRangeSelected = viewModel::onTimeRangeSelected,
         onHabitTap = { summary -> habitPendingLog = summary },
         onHabitLongPress = { summary -> onHabitLongPress(summary.habit.id) },
@@ -108,6 +111,8 @@ fun HomeRoute(
 fun HomeScreen(
     uiState: HomeUiState,
     isReorderMode: Boolean,
+    fluidOpacity: Float = 1.0f,
+    imageOpacity: Float = 0.35f,
     onTimeRangeSelected: (TimeRange) -> Unit,
     onHabitTap: (HabitSummary) -> Unit,
     onHabitLongPress: (HabitSummary) -> Unit,
@@ -236,6 +241,8 @@ fun HomeScreen(
             )
             else -> HomeContent(
                 uiState = uiState,
+                fluidOpacity = fluidOpacity,
+                imageOpacity = imageOpacity,
                 onTimeRangeSelected = onTimeRangeSelected,
                 onHabitTap = onHabitTap,
                 onHabitLongPress = onHabitLongPress,
@@ -249,6 +256,8 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     uiState: HomeUiState,
+    fluidOpacity: Float,
+    imageOpacity: Float,
     onTimeRangeSelected: (TimeRange) -> Unit,
     onHabitTap: (HabitSummary) -> Unit,
     onHabitLongPress: (HabitSummary) -> Unit,
@@ -302,6 +311,8 @@ private fun HomeContent(
                 lifetimeMinutes = summary.lifetimeMinutes,
                 stage = summary.stage,
                 visualProgress = summary.visualProgress,
+                fluidOpacity = fluidOpacity,
+                imageOpacity = imageOpacity,
                 onTap = { onHabitTap(summary) },
                 onLongPress = { onHabitLongPress(summary) },
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)

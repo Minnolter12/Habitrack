@@ -51,6 +51,14 @@ class SettingsViewModel(
         viewModelScope.launch { settingsDataStore.setFeedbackEnabled(enabled) }
     }
 
+    fun setFluidOpacity(opacity: Float) {
+        viewModelScope.launch { settingsDataStore.setFluidOpacity(opacity) }
+    }
+
+    fun setImageOpacity(opacity: Float) {
+        viewModelScope.launch { settingsDataStore.setImageOpacity(opacity) }
+    }
+
     fun exportDatabase(destinationUri: Uri) {
         viewModelScope.launch {
             _backupState.value = BackupOperationState.InProgress

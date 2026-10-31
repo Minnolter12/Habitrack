@@ -44,7 +44,9 @@ fun HabitCard(
     onTap: () -> Unit,
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
-    height: Dp = 168.dp
+    height: Dp = 168.dp,
+    fluidOpacity: Float = 1.0f,
+    imageOpacity: Float = 0.35f
 ) {
     val shape = RoundedCornerShape(28.dp)
     val isMaster = stage == ProgressionStage.MASTER
@@ -96,7 +98,7 @@ fun HabitCard(
                 AsyncImage(
                     model = habit.imageUri,
                     contentDescription = null,
-                    alpha = 0.35f,
+                    alpha = imageOpacity,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -120,6 +122,7 @@ fun HabitCard(
             stageColor = dynamicStageColor,
             isMasterStage = isMaster,
             cardCornerRadius = 28.dp,
+            fluidOpacity = fluidOpacity,
             modifier = Modifier.fillMaxSize()
         )
 

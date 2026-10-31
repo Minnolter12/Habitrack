@@ -72,6 +72,7 @@ fun JellyProgressCanvas(
     modifier: Modifier = Modifier,
     isMasterStage: Boolean = false,
     cardCornerRadius: Dp = 0.dp,
+    fluidOpacity: Float = 1.0f,
     reduceMotion: Boolean = rememberSystemReduceMotionEnabled().value || LocalReducedMotionPreference.current
 ) {
     val clampedProgress = visualProgress.coerceIn(0f, 1f)
@@ -157,7 +158,7 @@ fun JellyProgressCanvas(
             amplitude = amplitudePx,
             phase = wavePhase
         )
-        drawPath(path = primaryPath, color = stageColor.copy(alpha = 0.20f))
+        drawPath(path = primaryPath, color = stageColor.copy(alpha = 0.20f * fluidOpacity.coerceIn(0f, 1f)))
 
         // Secondary, slightly offset and quieter layer for parallax depth —
         // two waves out of phase read as "liquid" far more than one flat fill.
@@ -169,7 +170,7 @@ fun JellyProgressCanvas(
             amplitude = amplitudePx * 0.65f,
             phase = wavePhase + (PI / 2f).toFloat()
         )
-        drawPath(path = secondaryPath, color = stageColor.copy(alpha = 0.10f))
+        drawPath(path = secondaryPath, color = stageColor.copy(alpha = 0.10f * fluidOpacity.coerceIn(0f, 1f)))
 
         if (isMasterStage) {
             if (!reduceMotion) {
