@@ -109,7 +109,8 @@ fun SettingsRoute(
         onSignInWithGoogleClick = { viewModel.signInWithGoogle(context) },
         onSignOutClick = viewModel::signOut,
         onReducedMotionChanged = viewModel::setReducedMotionForced,
-        onFeedbackChanged = viewModel::setFeedbackEnabled,
+        onFeedbackEnabledChanged = viewModel::setFeedbackEnabled,
+        onDailyRemindersChanged = viewModel::setDailyRemindersEnabled,
         onFluidOpacityChanged = viewModel::setFluidOpacity,
         onImageOpacityChanged = viewModel::setImageOpacity,
         onReorderHabitsClick = onReorderHabitsClick,
@@ -137,7 +138,8 @@ fun SettingsScreen(
     onSignInWithGoogleClick: () -> Unit = {},
     onSignOutClick: () -> Unit = {},
     onReducedMotionChanged: (Boolean) -> Unit,
-    onFeedbackChanged: (Boolean) -> Unit,
+    onFeedbackEnabledChanged: (Boolean) -> Unit,
+    onDailyRemindersChanged: (Boolean) -> Unit = {},
     onFluidOpacityChanged: (Float) -> Unit = {},
     onImageOpacityChanged: (Float) -> Unit = {},
     onReorderHabitsClick: () -> Unit,
@@ -251,7 +253,19 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = settings.feedbackEnabled,
-                            onCheckedChange = onFeedbackChanged
+                            onCheckedChange = onFeedbackEnabledChanged
+                        )
+                    }
+                )
+            }
+            item {
+                ListItem(
+                    headlineContent = { Text("Daily Duolingo-style Reminders") },
+                    supportingContent = { Text("Playful daily prompts if you haven't logged practice hours") },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.dailyRemindersEnabled,
+                            onCheckedChange = onDailyRemindersChanged
                         )
                     }
                 )

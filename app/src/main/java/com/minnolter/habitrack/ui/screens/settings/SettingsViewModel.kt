@@ -71,6 +71,10 @@ class SettingsViewModel(
         viewModelScope.launch { settingsDataStore.setFeedbackEnabled(enabled) }
     }
 
+    fun setDailyRemindersEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsDataStore.setDailyRemindersEnabled(enabled) }
+    }
+
     fun setFluidOpacity(opacity: Float) {
         viewModelScope.launch { settingsDataStore.setFluidOpacity(opacity) }
     }

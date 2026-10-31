@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,12 +31,92 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+data class ReleaseNoteGroup(
+    val version: String,
+    val versionCode: Int,
+    val title: String,
+    val items: List<String>
+)
+
+val CUMULATIVE_RELEASE_NOTES: List<ReleaseNoteGroup> = listOf(
+    ReleaseNoteGroup(
+        version = "0.5.0",
+        versionCode = 500,
+        title = "v0.5.0 • Reminders, Widget & Release Notes",
+        items = listOf(
+            "🦉 Duolingo-style Reminders: Playful daily prompts if you haven't logged practice hours.",
+            "📱 Smart Home Screen Widget: Detects your active habit and displays hours invested.",
+            "📋 Dynamic Documentation: Release notes tailored dynamically to your version upgrade path."
+        )
+    ),
+    ReleaseNoteGroup(
+        version = "0.4.0",
+        versionCode = 400,
+        title = "v0.4.0 • Google Sign-In & Cloud Sync",
+        items = listOf(
+            "☁️ Google Sign-In: Connect your Google Account for cloud backups.",
+            "🔄 Cloud Firestore Sync: Seamlessly sync habits & sessions across devices.",
+            "🛡️ Local-First Protection: Existing offline data is preserved without data loss."
+        )
+    ),
+    ReleaseNoteGroup(
+        version = "0.3.0",
+        versionCode = 300,
+        title = "v0.3.0 • Card Opacity & Completion Projections",
+        items = listOf(
+            "📈 Completion Projections: Estimate projected completion dates for Master (10,000h).",
+            "🍩 Donut Distribution Charts: Time of Day and Day of Week breakdowns.",
+            "🎨 Card Opacity Sliders: Customize liquid fill and background picture transparency.",
+            "ℹ️ Developer About Page: Detailed app information with GitHub repository links."
+        )
+    ),
+    ReleaseNoteGroup(
+        version = "0.2.0",
+        versionCode = 200,
+        title = "v0.2.0 • Period Cycling & Focus Rhythm",
+        items = listOf(
+            "🗓️ Period Cycling: Use < and > controls to cycle through past weeks, months, and years.",
+            "🎯 Prime Focus Rhythm: Detects your peak focus hours automatically.",
+            "⚡ Weekly Velocity: Real-time velocity tracking and 30-day active rate."
+        )
+    ),
+    ReleaseNoteGroup(
+        version = "0.1.0",
+        versionCode = 100,
+        title = "v0.1.0 • Core 10,000-Hour Engine",
+        items = listOf(
+            "⏳ 10,000-Hour Rule Engine: 14-stage progression system from Just Started to Master.",
+            "🌊 Holographic Jelly Fill: Signature liquid cards that fill as you log practice time.",
+            "📊 Dynamic Range Filters: Track practice across Today, Week, Month, Year, and Lifetime."
+        )
+    )
+)
+
+fun parseVersionCode(version: String): Int {
+    if (version.isBlank()) return 0
+    val parts = version.split(".")
+    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    return major * 100 + minor * 10 + patch
+}
+
+fun getReleaseNotesForUpgrade(lastSeenVersion: String): List<ReleaseNoteGroup> {
+    if (lastSeenVersion.isBlank()) return CUMULATIVE_RELEASE_NOTES.take(1)
+    val lastCode = parseVersionCode(lastSeenVersion)
+    val filtered = CUMULATIVE_RELEASE_NOTES.filter { it.versionCode > lastCode }
+    return filtered.ifEmpty { CUMULATIVE_RELEASE_NOTES.take(1) }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WhatsNewSheet(
+    lastSeenVersion: String,
     onDismiss: () -> Unit,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 ) {
+    val releaseNotes = getReleaseNotesForUpgrade(lastSeenVersion)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -67,13 +146,13 @@ fun WhatsNewSheet(
                 }
                 Column {
                     Text(
-                        text = "What's New in v0.4.0",
+                        text = "What's New in Habitrack",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "Your 10,000-hour journey, powered up.",
+                        text = "Updates since version ${if (lastSeenVersion.isBlank()) "0.4.1" else lastSeenVersion}",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color(0xFF00E5FF)
                     )
@@ -84,43 +163,30 @@ fun WhatsNewSheet(
             HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
             Spacer(modifier = Modifier.height(16.dp))
 
-            WhatsNewFeatureRow(
-                icon = "☁️",
-                title = "Google Sign-In & Cloud Sync",
-                description = "Back up your habits & practice sessions to the cloud and sync across devices."
-            )
+            releaseNotes.forEachIndexed { index, group ->
+                if (index > 0) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-            Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = group.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF00E5FF),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
-            WhatsNewFeatureRow(
-                icon = "📈",
-                title = "Completion Projections & Pace",
-                description = "Estimated dates for Master (10,000h) and intermediate milestone stages based on your velocity."
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            WhatsNewFeatureRow(
-                icon = "🍩",
-                title = "Interactive Time Distribution",
-                description = "Visual donut charts breaking down your practice by Time of Day and Day of Week."
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            WhatsNewFeatureRow(
-                icon = "🗓️",
-                title = "Interactive Period Cycling",
-                description = "Use < and > controls to cycle through past weeks, months, and years of performance."
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            WhatsNewFeatureRow(
-                icon = "🎨",
-                title = "Card Opacity Customization",
-                description = "Sliders in Settings to customize card liquid fill and background picture transparency."
-            )
+                group.items.forEach { item ->
+                    Text(
+                        text = "• $item",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 4.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -140,39 +206,6 @@ fun WhatsNewSheet(
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun WhatsNewFeatureRow(
-    icon: String,
-    title: String,
-    description: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = icon,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 2.dp)
-        )
-        Spacer(modifier = Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.70f),
-                modifier = Modifier.padding(top = 2.dp)
-            )
         }
     }
 }

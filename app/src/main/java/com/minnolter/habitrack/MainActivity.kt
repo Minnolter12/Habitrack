@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
 
         val app = application as HabitractApplication
         app.syncManager.startSyncing()
+        scheduleDailyReminders()
 
         setContent {
             HabitractRoot(
@@ -42,6 +43,18 @@ class MainActivity : ComponentActivity() {
                 authManager = app.authManager
             )
         }
+    }
+
+    private fun scheduleDailyReminders() {
+        val request = androidx.work.PeriodicWorkRequestBuilder<com.minnolter.habitrack.data.notification.DailyReminderWorker>(
+            24, java.util.concurrent.TimeUnit.HOURS
+        ).build()
+
+        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "daily_duolingo_reminders",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
 }
 

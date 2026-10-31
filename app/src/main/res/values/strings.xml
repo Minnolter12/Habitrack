@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Habitrack</string>
+    <string name="widget_description">Smart habit tracker showing hours invested in your active habit.</string>
 </resources>

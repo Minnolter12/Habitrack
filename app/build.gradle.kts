@@ -14,8 +14,8 @@ android {
         applicationId = "com.minnolter.habitrack"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.4.1"
+        versionCode = 13
+        versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -97,6 +97,11 @@ dependencies {
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // Glance Widgets & WorkManager
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)

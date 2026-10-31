@@ -16,6 +16,7 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.DARK,
     val reducedMotionForced: Boolean = false,
     val feedbackEnabled: Boolean = true,
+    val dailyRemindersEnabled: Boolean = true,
     val hasCompletedOnboarding: Boolean = false,
     val fluidOpacity: Float = 1.0f,
     val imageOpacity: Float = 0.35f,
@@ -29,6 +30,7 @@ class SettingsDataStore(private val context: Context) {
             themeMode = ThemeMode.DARK,
             reducedMotionForced = prefs[REDUCED_MOTION_KEY] ?: false,
             feedbackEnabled = prefs[FEEDBACK_ENABLED_KEY] ?: true,
+            dailyRemindersEnabled = prefs[DAILY_REMINDERS_KEY] ?: true,
             hasCompletedOnboarding = prefs[HAS_COMPLETED_ONBOARDING_KEY] ?: false,
             fluidOpacity = prefs[FLUID_OPACITY_KEY] ?: 1.0f,
             imageOpacity = prefs[IMAGE_OPACITY_KEY] ?: 0.35f,
@@ -50,6 +52,10 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setFeedbackEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[FEEDBACK_ENABLED_KEY] = enabled }
+    }
+
+    suspend fun setDailyRemindersEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[DAILY_REMINDERS_KEY] = enabled }
     }
 
     suspend fun setFluidOpacity(opacity: Float) {
@@ -76,6 +82,7 @@ class SettingsDataStore(private val context: Context) {
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val REDUCED_MOTION_KEY = booleanPreferencesKey("reduced_motion_forced")
         val FEEDBACK_ENABLED_KEY = booleanPreferencesKey("feedback_enabled")
+        val DAILY_REMINDERS_KEY = booleanPreferencesKey("daily_reminders_enabled")
         val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
         val FLUID_OPACITY_KEY = floatPreferencesKey("fluid_opacity")
         val IMAGE_OPACITY_KEY = floatPreferencesKey("image_opacity")
