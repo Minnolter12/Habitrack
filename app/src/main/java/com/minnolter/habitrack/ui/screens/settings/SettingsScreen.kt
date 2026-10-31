@@ -150,10 +150,17 @@ fun SettingsScreen(
     onDismissRestartDialog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val backupInProgress = backupState is BackupOperationState.InProgress
     var showResetDialog1 by remember { mutableStateOf(false) }
     var showResetDialog2 by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        onDailyRemindersChanged(granted)
+    }
 
     Scaffold(
         modifier = modifier,
@@ -265,7 +272,22 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = settings.dailyRemindersEnabled,
-                            onCheckedChange = onDailyRemindersChanged
+                            onCheckedChange = { enabled ->
+                                if (enabled && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                    val permission = android.Manifest.permission.POST_NOTIFICATIONS
+                                    val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context, permission
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                                    if (!hasPermission) {
+                                        notifPermissionLauncher.launch(permission)
+                                    } else {
+                                        onDailyRemindersChanged(true)
+                                    }
+                                } else {
+                                    onDailyRemindersChanged(enabled)
+                                }
+                            }
                         )
                     }
                 )

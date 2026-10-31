@@ -65,10 +65,24 @@ private fun HabitractRoot(
     backupManager: DatabaseBackupManager,
     authManager: com.minnolter.habitrack.data.auth.FirebaseAuthManager
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModelFactory(repository, settingsDataStore, backupManager, authManager)
     )
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch(permission)
+            }
+        }
+    }
 
     val cosmicBackground = Brush.verticalGradient(
         colors = listOf(
