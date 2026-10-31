@@ -25,6 +25,11 @@ import com.minnolter.habitrack.domain.repository.HabitractRepository
  */
 class HabitractApplication : Application() {
 
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
+
     private val database: HabitractDatabase by lazy {
         HabitractDatabase.getInstance(this)
     }
@@ -52,5 +57,10 @@ class HabitractApplication : Application() {
         com.minnolter.habitrack.data.sync.FirestoreSyncManager(repository, authManager).also {
             it.startSyncing()
         }
+    }
+
+    companion object {
+        lateinit var instance: HabitractApplication
+            private set
     }
 }

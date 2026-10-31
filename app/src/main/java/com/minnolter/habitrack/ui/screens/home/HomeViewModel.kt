@@ -1,5 +1,6 @@
 package com.minnolter.habitrack.ui.screens.home
 
+import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -175,6 +176,17 @@ class HomeViewModel(
                     timestamp = Instant.now()
                 )
             )
+            updateGlanceWidget()
+        }
+    }
+
+    private fun updateGlanceWidget() {
+        viewModelScope.launch {
+            runCatching {
+                com.minnolter.habitrack.ui.widget.HabitractGlanceWidget().updateAll(
+                    com.minnolter.habitrack.HabitractApplication.instance
+                )
+            }
         }
     }
 }
