@@ -1,8 +1,11 @@
 package com.minnolter.habitrack.ui.screens.home.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,29 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
 
-/** A minimal, name-and-color view of a habit — enough to reorder by, without the cost of a full jelly card. */
 data class ReorderEntry(val habitId: Long, val name: String, val colorHex: String)
 
-private val ROW_HEIGHT = 64.dp
+private val ROW_HEIGHT = 72.dp
 
-/**
- * The Section 24 reorder UI: rows are deliberately simplified (name + accent
- * dot, no jelly canvas) since continuously animating N jelly fills while the
- * user is mid-drag would be exactly the kind of unnecessary GPU/CPU cost
- * Section 35 warns against, for a view the user is in only briefly.
- *
- * Every row exposes two ways to move: a long-press-and-drag handle (the
- * spec's literal "drag cards up and down"), and up/down icon buttons for
- * anyone who can't perform a drag gesture — a screen reader user, someone
- * using switch access, or anyone who'd simply rather tap twice (Section 34:
- * the app must remain usable without relying on gesture-only interactions).
- * Both act on the same underlying order, so they're always in sync.
- *
- * The reordered list is held entirely in local Compose state; [onOrderChanged]
- * fires on every move so the caller (`HomeScreen`) always has the latest
- * order on hand for its Save/Cancel actions, but nothing is persisted here —
- * this composable never talks to a ViewModel or repository.
- */
 @Composable
 fun ReorderableHabitList(
     items: List<ReorderEntry>,
@@ -81,54 +65,75 @@ fun ReorderableHabitList(
 
     val latestMoveItem = rememberUpdatedState(::moveItem)
 
-    LazyColumn(modifier = modifier) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(vertical = 12.dp, horizontal = 16.dp)
+    ) {
         itemsIndexed(items = orderedItems, key = { _, entry -> entry.habitId }) { index, entry ->
             val isDragging = entry.habitId == draggingId
+            val cardShape = RoundedCornerShape(18.dp)
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ROW_HEIGHT)
+                    .padding(vertical = 4.dp)
                     .zIndex(if (isDragging) 1f else 0f)
                     .graphicsLayer {
                         translationY = if (isDragging) dragOffsetPx else 0f
                         shadowElevation = if (isDragging) 12f else 0f
                     }
-                    .background(MaterialTheme.colorScheme.surface)
+                    .clip(cardShape)
+                    .background(Color(0xFF1B1822))
+                    .border(
+                        BorderStroke(
+                            width = 1.dp,
+                            color = if (isDragging) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.15f)
+                        ),
+                        shape = cardShape
+                    )
                     .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { latestMoveItem.value(index, index - 1) }, enabled = index > 0) {
-                    Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Move ${entry.name} up")
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        contentDescription = "Move ${entry.name} up",
+                        tint = if (index > 0) Color.White else Color.White.copy(alpha = 0.25f)
+                    )
                 }
                 IconButton(
                     onClick = { latestMoveItem.value(index, index + 1) },
                     enabled = index < orderedItems.lastIndex
                 ) {
-                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Move ${entry.name} down")
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "Move ${entry.name} down",
+                        tint = if (index < orderedItems.lastIndex) Color.White else Color.White.copy(alpha = 0.25f)
+                    )
                 }
 
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
+                        .size(14.dp)
                         .clip(CircleShape)
                         .background(Color(android.graphics.Color.parseColor(entry.colorHex)))
                 )
 
                 Text(
                     text = entry.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
                     modifier = Modifier
-                        .padding(start = 16.dp)
+                        .padding(start = 14.dp)
                         .weight(1f)
                 )
 
-                Icon(
-                    imageVector = Icons.Filled.DragHandle,
-                    contentDescription = "Drag to reorder ${entry.name}",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0x2200E5FF))
                         .pointerInput(entry.habitId, orderedItems.size) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = {
@@ -160,8 +165,14 @@ fun ReorderableHabitList(
                                 }
                             )
                         }
-                        .padding(8.dp)
-                )
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.DragHandle,
+                        contentDescription = "Drag to reorder ${entry.name}",
+                        tint = Color(0xFF00E5FF)
+                    )
+                }
             }
         }
     }

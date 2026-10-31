@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -163,18 +167,19 @@ fun HomeScreen(
                     actions = {
                         if (isReorderMode) {
                             IconButton(onClick = onReorderSaveClick) {
-                                Icon(Icons.Filled.Check, contentDescription = "Save new order")
+                                Icon(Icons.Filled.Check, contentDescription = "Save new order", tint = Color(0xFF00E5FF))
                             }
                         } else {
-                            if (!uiState.isEmpty && uiState.habits.size > 1) {
+                            if (!uiState.isEmpty) {
                                 IconButton(onClick = onReorderModeClick) {
-                                    Icon(Icons.Filled.Reorder, contentDescription = "Reorder habits")
+                                    Icon(Icons.Filled.Reorder, contentDescription = "Reorder habits", tint = Color.White)
                                 }
                             }
                             IconButton(onClick = onSettingsClick) {
                                 Icon(
                                     imageVector = Icons.Filled.Settings,
-                                    contentDescription = "Settings"
+                                    contentDescription = "Settings",
+                                    tint = Color.White
                                 )
                             }
                         }
@@ -234,6 +239,7 @@ fun HomeScreen(
                 onTimeRangeSelected = onTimeRangeSelected,
                 onHabitTap = onHabitTap,
                 onHabitLongPress = onHabitLongPress,
+                onReorderModeClick = onReorderModeClick,
                 modifier = Modifier.padding(contentPadding)
             )
         }
@@ -246,6 +252,7 @@ private fun HomeContent(
     onTimeRangeSelected: (TimeRange) -> Unit,
     onHabitTap: (HabitSummary) -> Unit,
     onHabitLongPress: (HabitSummary) -> Unit,
+    onReorderModeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -259,6 +266,34 @@ private fun HomeContent(
                 habitCount = uiState.habits.size,
                 onRangeSelected = onTimeRangeSelected
             )
+        }
+
+        if (uiState.habits.size > 1) {
+            item(key = "reorder_shortcut") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onReorderModeClick) {
+                        Icon(
+                            imageVector = Icons.Filled.Reorder,
+                            contentDescription = null,
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Reorder Habits",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color(0xFF00E5FF),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
         }
 
         items(items = uiState.habits, key = { it.habit.id }) { summary ->
