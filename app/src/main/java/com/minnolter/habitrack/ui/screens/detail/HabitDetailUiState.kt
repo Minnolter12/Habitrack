@@ -34,7 +34,9 @@ data class HabitDetailUiState(
     val visualProgress: Float = 0f,
 
     // Range-filtered breakdown
-    val selectedRange: TimeRange = TimeRange.LIFETIME,
+    val selectedRange: TimeRange = TimeRange.MONTH,
+    val selectedRangeOffset: Int = 0,
+    val periodLabel: String = "Month",
     val filteredMinutes: Long = 0L,
     val distributionBuckets: List<DistributionBucket> = emptyList(),
 

@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -105,6 +106,7 @@ fun HabitDetailRoute(
         uiState = uiState,
         onBack = onBack,
         onFilterSelected = viewModel::onFilterSelected,
+        onOffsetSelected = viewModel::onOffsetSelected,
         onEditHabitClick = viewModel::showEditHabitDialog,
         onDeleteHabitClick = viewModel::showDeleteConfirmationDialog,
         onAddSessionClick = { viewModel.showManualSessionDialog(null) },
@@ -130,6 +132,7 @@ fun HabitDetailScreen(
     uiState: HabitDetailUiState,
     onBack: () -> Unit,
     onFilterSelected: (TimeRange) -> Unit,
+    onOffsetSelected: (Int) -> Unit = {},
     onEditHabitClick: () -> Unit,
     onDeleteHabitClick: () -> Unit,
     onAddSessionClick: () -> Unit,
@@ -257,7 +260,10 @@ fun HabitDetailScreen(
                     Column(modifier = Modifier.padding(top = 8.dp)) {
                         FilteredTotalCaption(
                             range = uiState.selectedRange,
-                            filteredMinutes = uiState.filteredMinutes
+                            periodLabel = uiState.periodLabel,
+                            filteredMinutes = uiState.filteredMinutes,
+                            rangeOffset = uiState.selectedRangeOffset,
+                            onOffsetChanged = onOffsetSelected
                         )
                         DistributionBarChart(
                             buckets = uiState.distributionBuckets,
@@ -657,13 +663,74 @@ private fun CollapsibleRecentSessions(
 }
 
 @Composable
-private fun FilteredTotalCaption(range: TimeRange, filteredMinutes: Long) {
-    Text(
-        text = "${range.detailLabel()}: ${formatExactDuration(filteredMinutes)}",
-        style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.70f),
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-    )
+private fun FilteredTotalCaption(
+    range: TimeRange,
+    periodLabel: String,
+    filteredMinutes: Long,
+    rangeOffset: Int,
+    onOffsetChanged: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+    ) {
+        if (range != TimeRange.LIFETIME) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { onOffsetChanged(rangeOffset - 1) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous period",
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Text(
+                        text = periodLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    IconButton(
+                        onClick = { onOffsetChanged(rangeOffset + 1) },
+                        enabled = rangeOffset < 0,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Next period",
+                            tint = if (rangeOffset < 0) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.25f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Text(
+                    text = formatExactDuration(filteredMinutes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF00E5FF)
+                )
+            }
+        } else {
+            Text(
+                text = "Lifetime Total: ${formatExactDuration(filteredMinutes)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.70f)
+            )
+        }
+    }
 }
 
 @Composable
@@ -956,7 +1023,7 @@ private fun formatSessionDateLabel(timestamp: Instant): String {
 private fun TimeRange.detailLabel(): String = when (this) {
     TimeRange.LIFETIME -> "Lifetime"
     TimeRange.TODAY -> "Today"
-    TimeRange.WEEK -> "This Week"
-    TimeRange.MONTH -> "This Month"
-    TimeRange.YEAR -> "This Year"
+    TimeRange.WEEK -> "Week"
+    TimeRange.MONTH -> "Month"
+    TimeRange.YEAR -> "Year"
 }

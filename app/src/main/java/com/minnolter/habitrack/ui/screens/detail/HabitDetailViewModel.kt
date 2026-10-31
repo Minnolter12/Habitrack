@@ -35,6 +35,7 @@ class HabitDetailViewModel(
 ) : ViewModel() {
 
     private val selectedRange = MutableStateFlow(TimeRange.MONTH)
+    private val selectedRangeOffset = MutableStateFlow(0)
     private val dialogState = MutableStateFlow<HabitDetailDialogState>(HabitDetailDialogState.None)
     private val isDeleted = MutableStateFlow(false)
 
@@ -57,13 +58,14 @@ class HabitDetailViewModel(
     val uiState: StateFlow<HabitDetailUiState> = combine(
         habitAggregates,
         selectedRange,
+        selectedRangeOffset,
         dialogState,
         isDeleted
-    ) { aggregates, range, dialog, deleted ->
+    ) { aggregates, range, rangeOffset, dialog, deleted ->
         when {
             deleted -> HabitDetailUiState(isLoading = false, habitId = habitId, isDeleted = true)
             aggregates == null -> HabitDetailUiState(isLoading = true, habitId = habitId)
-            else -> buildUiState(aggregates, range, dialog)
+            else -> buildUiState(aggregates, range, rangeOffset, dialog)
         }
     }.stateIn(
         scope = viewModelScope,
@@ -74,6 +76,7 @@ class HabitDetailViewModel(
     private fun buildUiState(
         aggregates: HabitAggregates,
         range: TimeRange,
+        rangeOffset: Int,
         dialog: HabitDetailDialogState
     ): HabitDetailUiState {
         val habit = aggregates.habit
@@ -86,7 +89,7 @@ class HabitDetailViewModel(
         val filteredMinutes = if (range == TimeRange.LIFETIME) {
             lifetimeMinutes
         } else {
-            val bounds = dateRangeProvider.boundsFor(range, now)
+            val bounds = dateRangeProvider.boundsFor(range, now, rangeOffset)
             userSessions.filter { session ->
                 val epochMillis = session.timestamp.toEpochMilli()
                 epochMillis in bounds.startEpochMillis..bounds.endEpochMillis
@@ -135,8 +138,10 @@ class HabitDetailViewModel(
             actualProgress = ProgressionStage.calculateActualProgress(lifetimeMinutes),
             visualProgress = ProgressionStage.calculateVisualProgress(lifetimeMinutes),
             selectedRange = range,
+            selectedRangeOffset = rangeOffset,
+            periodLabel = dateRangeProvider.periodLabel(range, now, rangeOffset),
             filteredMinutes = filteredMinutes,
-            distributionBuckets = buildDistributionBuckets(if (range == TimeRange.LIFETIME) sessions else userSessions, range, now),
+            distributionBuckets = buildDistributionBuckets(if (range == TimeRange.LIFETIME) sessions else userSessions, range, now, rangeOffset),
             sessionCount = userSessionCount,
             averageSessionMinutes = averageSessionMinutes,
             longestSessionMinutes = longestSessionMinutes,
@@ -242,18 +247,19 @@ class HabitDetailViewModel(
     private fun buildDistributionBuckets(
         sessions: List<PracticeSession>,
         range: TimeRange,
-        now: Instant
+        now: Instant,
+        offset: Int = 0
     ): List<DistributionBucket> {
         val zonedNow = ZonedDateTime.ofInstant(now, zoneId)
 
         return when (range) {
             TimeRange.TODAY -> {
-                val todayDate = zonedNow.toLocalDate()
-                val todaySessions = sessions.filter {
-                    ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate() == todayDate
+                val targetDate = zonedNow.toLocalDate().plusDays(offset.toLong())
+                val targetSessions = sessions.filter {
+                    ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate() == targetDate
                 }
                 listOf(0, 3, 6, 9, 12, 15, 18, 21).map { hour ->
-                    val hourMinutes = todaySessions.filter {
+                    val hourMinutes = targetSessions.filter {
                         val hourOfDay = ZonedDateTime.ofInstant(it.timestamp, zoneId).hour
                         hourOfDay in hour..(hour + 2)
                     }.sumOf { it.durationMinutes.toLong() }
@@ -269,10 +275,10 @@ class HabitDetailViewModel(
             }
 
             TimeRange.WEEK -> {
-                val weekStart = zonedNow.toLocalDate()
-                    .minusDays((zonedNow.dayOfWeek.value - 1).toLong())
-                (0..6).map { offset ->
-                    val day = weekStart.plusDays(offset.toLong())
+                val currentMonday = zonedNow.toLocalDate().minusDays((zonedNow.dayOfWeek.value - 1).toLong())
+                val weekStart = currentMonday.plusWeeks(offset.toLong())
+                (0..6).map { dayOffset ->
+                    val day = weekStart.plusDays(dayOffset.toLong())
                     DistributionBucket(
                         label = day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
                         minutes = sessions.minutesOnLocalDate(day, zoneId)
@@ -281,9 +287,10 @@ class HabitDetailViewModel(
             }
 
             TimeRange.MONTH -> {
-                val monthStart = zonedNow.toLocalDate().withDayOfMonth(1)
-                (0 until monthStart.lengthOfMonth()).map { offset ->
-                    val day = monthStart.plusDays(offset.toLong())
+                val currentMonthStart = zonedNow.toLocalDate().withDayOfMonth(1)
+                val monthStart = currentMonthStart.plusMonths(offset.toLong())
+                (0 until monthStart.lengthOfMonth()).map { dayOffset ->
+                    val day = monthStart.plusDays(dayOffset.toLong())
                     DistributionBucket(
                         label = day.dayOfMonth.toString(),
                         minutes = sessions.minutesOnLocalDate(day, zoneId)
@@ -292,10 +299,11 @@ class HabitDetailViewModel(
             }
 
             TimeRange.YEAR -> {
+                val targetYear = zonedNow.year + offset
                 (1..12).map { month ->
                     val minutes = sessions.filter { session ->
                         val local = ZonedDateTime.ofInstant(session.timestamp, zoneId)
-                        local.year == zonedNow.year && local.monthValue == month
+                        local.year == targetYear && local.monthValue == month
                     }.sumOf { it.durationMinutes.toLong() }
                     DistributionBucket(
                         label = Month.of(month).getDisplayName(TextStyle.SHORT, Locale.getDefault()),
@@ -329,6 +337,11 @@ class HabitDetailViewModel(
 
     fun onFilterSelected(range: TimeRange) {
         selectedRange.value = range
+        selectedRangeOffset.value = 0
+    }
+
+    fun onOffsetSelected(offset: Int) {
+        selectedRangeOffset.value = offset.coerceAtMost(0)
     }
 
     fun logSession(durationMinutes: Long, timestampEpochMs: Long, note: String?) {
