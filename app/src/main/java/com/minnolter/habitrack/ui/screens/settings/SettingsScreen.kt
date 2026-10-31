@@ -1,21 +1,32 @@
 package com.minnolter.habitrack.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -126,6 +137,7 @@ fun SettingsScreen(
     val backupInProgress = backupState is BackupOperationState.InProgress
     var showResetDialog1 by remember { mutableStateOf(false) }
     var showResetDialog2 by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -206,6 +218,17 @@ fun SettingsScreen(
             }
 
             item { HorizontalDivider() }
+            item { SectionHeader("About") }
+            item {
+                ListItem(
+                    headlineContent = { Text("About Habitrack", fontWeight = FontWeight.SemiBold) },
+                    supportingContent = { Text("v0.3.0 • Developed by Dev Madhav • GitHub") },
+                    leadingContent = { Icon(Icons.Filled.Info, contentDescription = null, tint = Color(0xFF00E5FF)) },
+                    modifier = Modifier.clickable { showAboutDialog = true }
+                )
+            }
+
+            item { HorizontalDivider() }
             item { SectionHeader("Danger Zone", color = Color(0xFFFF5252)) }
             item {
                 ListItem(
@@ -280,6 +303,98 @@ fun SettingsScreen(
             dismissButton = { TextButton(onClick = onDismissRestartDialog) { Text("Later") } }
         )
     }
+
+    if (showAboutDialog) {
+        AboutDialog(onDismiss = { showAboutDialog = false })
+    }
+}
+
+@Composable
+private fun AboutDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val githubUrl = "https://github.com/Minnolter12/Habitrack"
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = Color(0xFF00E5FF)
+                )
+                Text("About Habitrack", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Habitrack",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "Version 0.3.0",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color(0xFF00E5FF),
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                Text(
+                    text = "Time shapes you.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.65f),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+                )
+
+                HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Crafted with ❤ by Dev Madhav",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+                Text(
+                    text = "An open-source, privacy-first 10,000-hour mastery & habit tracker.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.70f),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                )
+
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubUrl))
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF7C4DFF),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Code,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("Visit GitHub Repository", fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Color(0xFF00E5FF))
+            }
+        }
+    )
 }
 
 @Composable
