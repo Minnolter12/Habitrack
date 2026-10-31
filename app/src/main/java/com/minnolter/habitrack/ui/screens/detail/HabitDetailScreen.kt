@@ -86,6 +86,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
@@ -271,6 +272,10 @@ fun HabitDetailScreen(
 
                 item(key = "insightful_stats_grid") {
                     InsightfulStatsSection(uiState = uiState)
+                }
+
+                item(key = "fun_cosmic_stats") {
+                    FunCosmicStatsSection(uiState = uiState)
                 }
 
                 item(key = "collapsible_sessions") {
@@ -476,6 +481,72 @@ private fun InsightfulStatsSection(uiState: HabitDetailUiState) {
             StatCard(
                 title = "Total Sessions",
                 value = "${uiState.sessionCount} sessions",
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FunCosmicStatsSection(uiState: HabitDetailUiState) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "✨ Fun Insights & Real-World Equivalents",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF00E5FF),
+            modifier = Modifier.padding(bottom = 2.dp, start = 4.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(
+                title = "🎯 Prime Focus Rhythm",
+                value = uiState.peakFocusWindow,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "⚡ Weekly Velocity",
+                value = String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(
+                title = "📚 Book Equivalent",
+                value = String.format(Locale.US, "%.1f Books", uiState.booksEquivalent),
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "🎬 Movie Equivalent",
+                value = String.format(Locale.US, "%.1f Movies", uiState.moviesEquivalent),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(
+                title = "🔥 Consistency (Last 30d)",
+                value = "${uiState.consistencyScorePercent}% Active",
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "🏆 Next Milestone (${uiState.nextMilestoneHours}h)",
+                value = String.format(Locale.US, "%.1fh left", uiState.hoursToNextMilestone),
                 modifier = Modifier.weight(1f)
             )
         }

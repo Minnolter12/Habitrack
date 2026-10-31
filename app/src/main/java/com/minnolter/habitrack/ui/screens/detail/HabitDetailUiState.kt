@@ -46,6 +46,16 @@ data class HabitDetailUiState(
     val longestStreakDays: Int = 0,
     val bestPracticeDayOfWeek: String = "N/A",
 
+    // Fun & Cosmic Statistics
+    val daysInvestedNonstop: Float = 0f,
+    val booksEquivalent: Float = 0f,
+    val moviesEquivalent: Float = 0f,
+    val peakFocusWindow: String = "N/A",
+    val weeklyVelocityHours: Float = 0f,
+    val consistencyScorePercent: Int = 0,
+    val nextMilestoneHours: Long = 10L,
+    val hoursToNextMilestone: Float = 10f,
+
     // Session history
     val recentSessions: List<SessionListItem> = emptyList(),
 

@@ -110,6 +110,18 @@ class HabitDetailViewModel(
         val (currentStreak, longestStreak) = calculateStreaks(userSessions, zoneId)
         val bestDay = calculateBestPracticeDay(userSessions, zoneId)
 
+        val daysInvestedNonstop = lifetimeMinutes / 1440.0f
+        val booksEquivalent = lifetimeMinutes / 360.0f
+        val moviesEquivalent = lifetimeMinutes / 120.0f
+        val peakFocus = calculatePeakFocusWindow(userSessions, zoneId)
+        val consistencyScore = calculateConsistencyScore(userSessions, zoneId)
+
+        val daysSinceCreation = maxOf(1L, java.time.Duration.between(habit.createdAt, now).toDays())
+        val weeksSinceCreation = maxOf(1.0f, daysSinceCreation / 7.0f)
+        val weeklyVelocity = (lifetimeMinutes / 60.0f) / weeksSinceCreation
+
+        val (nextMilestoneHours, hoursRemaining) = calculateNextMilestone(lifetimeMinutes)
+
         return HabitDetailUiState(
             isLoading = false,
             habitId = habit.id,
@@ -131,6 +143,14 @@ class HabitDetailViewModel(
             currentStreakDays = currentStreak,
             longestStreakDays = longestStreak,
             bestPracticeDayOfWeek = bestDay,
+            daysInvestedNonstop = daysInvestedNonstop,
+            booksEquivalent = booksEquivalent,
+            moviesEquivalent = moviesEquivalent,
+            peakFocusWindow = peakFocus,
+            weeklyVelocityHours = weeklyVelocity,
+            consistencyScorePercent = consistencyScore,
+            nextMilestoneHours = nextMilestoneHours,
+            hoursToNextMilestone = hoursRemaining,
             recentSessions = userSessions
                 .sortedByDescending { it.timestamp }
                 .map { SessionListItem(it.id, it.timestamp, it.durationMinutes, it.note) },
@@ -187,6 +207,36 @@ class HabitDetailViewModel(
 
         val bestDate = dateMinutesMap.maxByOrNull { it.value }?.key ?: return "N/A"
         return bestDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy (EEEE)"))
+    }
+
+    private fun calculatePeakFocusWindow(sessions: List<PracticeSession>, zoneId: ZoneId): String {
+        if (sessions.isEmpty()) return "N/A"
+        val hourCounts = sessions.map { ZonedDateTime.ofInstant(it.timestamp, zoneId).hour }
+        val peakHour = hourCounts.groupBy { it }.maxByOrNull { it.value.size }?.key ?: 12
+        return when (peakHour) {
+            in 5..11 -> "🌅 Morning Dynamo"
+            in 12..16 -> "☀️ Afternoon Crusher"
+            in 17..21 -> "🌆 Twilight Achiever"
+            else -> "🌙 Night Owl Focus"
+        }
+    }
+
+    private fun calculateConsistencyScore(sessions: List<PracticeSession>, zoneId: ZoneId): Int {
+        if (sessions.isEmpty()) return 0
+        val today = LocalDate.now(zoneId)
+        val thirtyDaysAgo = today.minusDays(30)
+        val activeInLast30 = sessions.map { ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate() }
+            .filter { !it.isBefore(thirtyDaysAgo) }
+            .distinct().size
+        return ((activeInLast30 / 30.0f) * 100).toInt().coerceIn(0, 100)
+    }
+
+    private fun calculateNextMilestone(lifetimeMinutes: Long): Pair<Long, Float> {
+        val milestones = listOf(10L, 25L, 50L, 100L, 250L, 500L, 1000L, 2500L, 5000L, 10000L)
+        val lifetimeHours = lifetimeMinutes / 60.0f
+        val nextMilestone = milestones.firstOrNull { it > lifetimeHours.toLong() } ?: 10000L
+        val hoursRemaining = (nextMilestone - lifetimeHours).coerceAtLeast(0f)
+        return Pair(nextMilestone, hoursRemaining)
     }
 
     private fun buildDistributionBuckets(
