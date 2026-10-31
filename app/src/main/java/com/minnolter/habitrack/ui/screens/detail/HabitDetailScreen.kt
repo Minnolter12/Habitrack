@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -304,6 +306,7 @@ fun HabitDetailScreen(
 @Composable
 private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
     val isMaster = uiState.stage == ProgressionStage.MASTER
+    val hasBackgroundImage = !uiState.imageUri.isNullOrBlank()
 
     Column(
         modifier = Modifier
@@ -318,6 +321,34 @@ private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
                 .background(Color(0xFF1B1822).copy(alpha = 0.85f))
                 .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)), shape = RoundedCornerShape(24.dp))
         ) {
+            if (hasBackgroundImage) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(24.dp))
+                ) {
+                    AsyncImage(
+                        model = uiState.imageUri,
+                        contentDescription = null,
+                        alpha = 0.35f,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.45f),
+                                        Color.Black.copy(alpha = 0.60f)
+                                    )
+                                )
+                            )
+                    )
+                }
+            }
+
             JellyProgressCanvas(
                 visualProgress = uiState.visualProgress,
                 stageColor = accentColor,
@@ -445,138 +476,110 @@ private fun PracticeRangeSection(
     onRangeSelected: (TimeRange) -> Unit,
     onOffsetSelected: (Int) -> Unit
 ) {
-    Surface(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(24.dp),
-        color = Color(0x14FFFFFF),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "📊 Practice Histogram & Range",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF00E5FF)
-            )
+        BreakdownFilterRow(
+            selectedRange = uiState.selectedRange,
+            onRangeSelected = onRangeSelected
+        )
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-            BreakdownFilterRow(
-                selectedRange = uiState.selectedRange,
-                onRangeSelected = onRangeSelected
-            )
+        FilteredTotalCaption(
+            range = uiState.selectedRange,
+            periodLabel = uiState.periodLabel,
+            filteredMinutes = uiState.filteredMinutes,
+            rangeOffset = uiState.selectedRangeOffset,
+            onOffsetChanged = onOffsetSelected
+        )
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            FilteredTotalCaption(
-                range = uiState.selectedRange,
-                periodLabel = uiState.periodLabel,
-                filteredMinutes = uiState.filteredMinutes,
-                rangeOffset = uiState.selectedRangeOffset,
-                onOffsetChanged = onOffsetSelected
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            DistributionBarChart(
-                buckets = uiState.distributionBuckets,
-                accentColor = accentColor,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-            )
-        }
+        DistributionBarChart(
+            buckets = uiState.distributionBuckets,
+            accentColor = accentColor,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+        )
     }
 }
 
 @Composable
 private fun PerformanceAnalyticsSection(uiState: HabitDetailUiState) {
-    Surface(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(24.dp),
-        color = Color(0x14FFFFFF),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        FullWidthStatRow(
+            title = "Projected Master Date (10,000h)",
+            value = uiState.projectedMasterDate,
+            subtitle = "Pace: ${String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours)}"
+        )
+
+        FullWidthStatRow(
+            title = "Projected ${uiState.nextStageName}",
+            value = uiState.projectedNextStageDate,
+            subtitle = "Next Milestone: ${uiState.nextMilestoneHours}h (${String.format(Locale.US, "%.1fh remaining", uiState.hoursToNextMilestone)})"
+        )
+
+        FullWidthStatRow(
+            title = "Best Practice Day",
+            value = uiState.bestPracticeDayOfWeek,
+            subtitle = "Highest duration logged"
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = "📈 Completion Projections & Pace",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF00E5FF)
+            CompactStatCard(
+                title = "Avg Daily Practice",
+                value = formatExactDuration(uiState.averageSessionMinutes),
+                modifier = Modifier.weight(1f)
             )
-
-            FullWidthStatRow(
-                title = "Projected Master Date (10,000h)",
-                value = uiState.projectedMasterDate,
-                subtitle = "Pace: ${String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours)}"
+            CompactStatCard(
+                title = "30-Day Active Rate",
+                value = "${uiState.consistencyScorePercent}% active",
+                modifier = Modifier.weight(1f)
             )
+        }
 
-            FullWidthStatRow(
-                title = "Projected ${uiState.nextStageName}",
-                value = uiState.projectedNextStageDate,
-                subtitle = "Next Milestone: ${uiState.nextMilestoneHours}h (${String.format(Locale.US, "%.1fh remaining", uiState.hoursToNextMilestone)})"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CompactStatCard(
+                title = "Longest Session",
+                value = formatExactDuration(uiState.longestSessionMinutes),
+                modifier = Modifier.weight(1f)
             )
-
-            FullWidthStatRow(
-                title = "Best Practice Day",
-                value = uiState.bestPracticeDayOfWeek,
-                subtitle = "Highest duration logged"
+            CompactStatCard(
+                title = "Total Sessions",
+                value = "${uiState.sessionCount} sessions",
+                modifier = Modifier.weight(1f)
             )
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CompactStatCard(
-                    title = "Avg Daily Practice",
-                    value = formatExactDuration(uiState.averageSessionMinutes),
-                    modifier = Modifier.weight(1f)
-                )
-                CompactStatCard(
-                    title = "30-Day Active Rate",
-                    value = "${uiState.consistencyScorePercent}% active",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CompactStatCard(
-                    title = "Longest Session",
-                    value = formatExactDuration(uiState.longestSessionMinutes),
-                    modifier = Modifier.weight(1f)
-                )
-                CompactStatCard(
-                    title = "Total Sessions",
-                    value = "${uiState.sessionCount} sessions",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CompactStatCard(
-                    title = "Peak Focus Window",
-                    value = uiState.peakFocusWindow,
-                    modifier = Modifier.weight(1f)
-                )
-                CompactStatCard(
-                    title = "Weekly Velocity",
-                    value = String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours),
-                    modifier = Modifier.weight(1f)
-                )
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CompactStatCard(
+                title = "Peak Focus Window",
+                value = uiState.peakFocusWindow,
+                modifier = Modifier.weight(1f)
+            )
+            CompactStatCard(
+                title = "Weekly Velocity",
+                value = String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours),
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -664,144 +667,136 @@ private fun DonutPieChartSection(uiState: HabitDetailUiState) {
     var selectedChartMode by rememberSaveable { mutableStateOf(0) } // 0 = Time of Day, 1 = Day of Week
     val slices = if (selectedChartMode == 0) uiState.timeOfDayPieSlices else uiState.dayOfWeekPieSlices
 
-    Surface(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0x14FFFFFF),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selectedChartMode == 0,
+                onClick = { selectedChartMode = 0 },
+                label = { Text("Time of Day", style = MaterialTheme.typography.labelMedium) },
+                shape = RoundedCornerShape(percent = 50),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0x337C4DFF),
+                    selectedLabelColor = Color.White,
+                    containerColor = Color(0x14FFFFFF),
+                    labelColor = Color.White.copy(alpha = 0.65f)
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            FilterChip(
+                selected = selectedChartMode == 1,
+                onClick = { selectedChartMode = 1 },
+                label = { Text("Day of Week", style = MaterialTheme.typography.labelMedium) },
+                shape = RoundedCornerShape(percent = 50),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0x337C4DFF),
+                    selectedLabelColor = Color.White,
+                    containerColor = Color(0x14FFFFFF),
+                    labelColor = Color.White.copy(alpha = 0.65f)
+                ),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (slices.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No session data logged yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.60f)
+                )
+            }
+        } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "🍩 Practice Breakdown",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FilterChip(
-                        selected = selectedChartMode == 0,
-                        onClick = { selectedChartMode = 0 },
-                        label = { Text("Time of Day", style = MaterialTheme.typography.labelSmall) },
-                        shape = RoundedCornerShape(percent = 50),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0x337C4DFF),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0x14FFFFFF),
-                            labelColor = Color.White.copy(alpha = 0.60f)
-                        )
-                    )
-                    FilterChip(
-                        selected = selectedChartMode == 1,
-                        onClick = { selectedChartMode = 1 },
-                        label = { Text("Day of Week", style = MaterialTheme.typography.labelSmall) },
-                        shape = RoundedCornerShape(percent = 50),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0x337C4DFF),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0x14FFFFFF),
-                            labelColor = Color.White.copy(alpha = 0.60f)
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (slices.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp),
+                        .size(130.dp)
+                        .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "No session data logged yet.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.60f)
-                    )
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(130.dp)
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            var startAngle = -90f
-                            slices.forEach { slice ->
-                                val sweepAngle = (slice.percentage / 100f) * 360f
-                                drawArc(
-                                    color = Color(android.graphics.Color.parseColor(slice.colorHex)),
-                                    startAngle = startAngle,
-                                    sweepAngle = sweepAngle,
-                                    useCenter = false,
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20.dp.toPx())
-                                )
-                                startAngle += sweepAngle
-                            }
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = formatExactDuration(uiState.lifetimeMinutes),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        var startAngle = -90f
+                        slices.forEach { slice ->
+                            val sweepAngle = (slice.percentage / 100f) * 360f
+                            drawArc(
+                                color = Color(android.graphics.Color.parseColor(slice.colorHex)),
+                                startAngle = startAngle,
+                                sweepAngle = sweepAngle,
+                                useCenter = false,
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20.dp.toPx())
                             )
-                            Text(
-                                text = "Total",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.60f)
-                            )
+                            startAngle += sweepAngle
                         }
                     }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = formatExactDuration(uiState.lifetimeMinutes),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Total",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.60f)
+                        )
+                    }
+                }
 
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        slices.forEach { slice ->
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    slices.forEach { slice ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(android.graphics.Color.parseColor(slice.colorHex)))
-                                    )
-                                    Text(
-                                        text = slice.label,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(start = 8.dp)
-                                    )
-                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(android.graphics.Color.parseColor(slice.colorHex)))
+                                )
                                 Text(
-                                    text = "${slice.percentage.toInt()}%",
+                                    text = slice.label,
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF00E5FF)
+                                    color = Color.White,
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    maxLines = 1
                                 )
                             }
+                            Text(
+                                text = "${slice.percentage.toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00E5FF),
+                                modifier = Modifier.padding(start = 6.dp)
+                            )
                         }
                     }
                 }
