@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -280,8 +281,12 @@ fun HabitDetailScreen(
                     InsightfulStatsSection(uiState = uiState)
                 }
 
-                item(key = "fun_cosmic_stats") {
-                    FunCosmicStatsSection(uiState = uiState)
+                item(key = "performance_analytics") {
+                    PerformanceAnalyticsSection(uiState = uiState)
+                }
+
+                item(key = "donut_pie_chart") {
+                    DonutPieChartSection(uiState = uiState)
                 }
 
                 item(key = "collapsible_sessions") {
@@ -494,7 +499,7 @@ private fun InsightfulStatsSection(uiState: HabitDetailUiState) {
 }
 
 @Composable
-private fun FunCosmicStatsSection(uiState: HabitDetailUiState) {
+private fun PerformanceAnalyticsSection(uiState: HabitDetailUiState) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -502,7 +507,7 @@ private fun FunCosmicStatsSection(uiState: HabitDetailUiState) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "✨ Fun Insights & Real-World Equivalents",
+            text = "📈 Completion & Performance Projections",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF00E5FF),
@@ -514,47 +519,199 @@ private fun FunCosmicStatsSection(uiState: HabitDetailUiState) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCard(
-                title = "🎯 Prime Focus Rhythm",
+                title = "Projected Master (10k hrs)",
+                value = uiState.projectedMasterDate,
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Projected ${uiState.nextStageName}",
+                value = uiState.projectedNextStageDate,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(
+                title = "Weekly Velocity",
+                value = String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours),
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "30-Day Active Rate",
+                value = "${uiState.consistencyScorePercent}% active",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatCard(
+                title = "Peak Focus Window",
                 value = uiState.peakFocusWindow,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
-                title = "⚡ Weekly Velocity",
-                value = String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours),
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                title = "📚 Book Equivalent",
-                value = String.format(Locale.US, "%.1f Books", uiState.booksEquivalent),
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                title = "🎬 Movie Equivalent",
-                value = String.format(Locale.US, "%.1f Movies", uiState.moviesEquivalent),
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                title = "🔥 Consistency (Last 30d)",
-                value = "${uiState.consistencyScorePercent}% Active",
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                title = "🏆 Next Milestone (${uiState.nextMilestoneHours}h)",
+                title = "Next Milestone (${uiState.nextMilestoneHours}h)",
                 value = String.format(Locale.US, "%.1fh left", uiState.hoursToNextMilestone),
                 modifier = Modifier.weight(1f)
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DonutPieChartSection(uiState: HabitDetailUiState) {
+    var selectedChartMode by rememberSaveable { mutableStateOf(0) } // 0 = Time of Day, 1 = Day of Week
+    val slices = if (selectedChartMode == 0) uiState.timeOfDayPieSlices else uiState.dayOfWeekPieSlices
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0x14FFFFFF),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "🍩 Practice Breakdown",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FilterChip(
+                        selected = selectedChartMode == 0,
+                        onClick = { selectedChartMode = 0 },
+                        label = { Text("Time of Day", style = MaterialTheme.typography.labelSmall) },
+                        shape = RoundedCornerShape(percent = 50),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0x337C4DFF),
+                            selectedLabelColor = Color.White,
+                            containerColor = Color(0x14FFFFFF),
+                            labelColor = Color.White.copy(alpha = 0.60f)
+                        )
+                    )
+                    FilterChip(
+                        selected = selectedChartMode == 1,
+                        onClick = { selectedChartMode = 1 },
+                        label = { Text("Day of Week", style = MaterialTheme.typography.labelSmall) },
+                        shape = RoundedCornerShape(percent = 50),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0x337C4DFF),
+                            selectedLabelColor = Color.White,
+                            containerColor = Color(0x14FFFFFF),
+                            labelColor = Color.White.copy(alpha = 0.60f)
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (slices.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No session data logged yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.60f)
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(130.dp)
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            var startAngle = -90f
+                            slices.forEach { slice ->
+                                val sweepAngle = (slice.percentage / 100f) * 360f
+                                drawArc(
+                                    color = Color(android.graphics.Color.parseColor(slice.colorHex)),
+                                    startAngle = startAngle,
+                                    sweepAngle = sweepAngle,
+                                    useCenter = false,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20.dp.toPx())
+                                )
+                                startAngle += sweepAngle
+                            }
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = formatExactDuration(uiState.lifetimeMinutes),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Total",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.60f)
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        slices.forEach { slice ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(android.graphics.Color.parseColor(slice.colorHex)))
+                                    )
+                                    Text(
+                                        text = slice.label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "${slice.percentage.toInt()}%",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF00E5FF)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

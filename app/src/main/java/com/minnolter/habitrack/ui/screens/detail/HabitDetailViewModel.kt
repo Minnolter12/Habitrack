@@ -113,9 +113,6 @@ class HabitDetailViewModel(
         val (currentStreak, longestStreak) = calculateStreaks(userSessions, zoneId)
         val bestDay = calculateBestPracticeDay(userSessions, zoneId)
 
-        val daysInvestedNonstop = lifetimeMinutes / 1440.0f
-        val booksEquivalent = lifetimeMinutes / 360.0f
-        val moviesEquivalent = lifetimeMinutes / 120.0f
         val peakFocus = calculatePeakFocusWindow(userSessions, zoneId)
         val consistencyScore = calculateConsistencyScore(userSessions, zoneId)
 
@@ -124,6 +121,9 @@ class HabitDetailViewModel(
         val weeklyVelocity = (lifetimeMinutes / 60.0f) / weeksSinceCreation
 
         val (nextMilestoneHours, hoursRemaining) = calculateNextMilestone(lifetimeMinutes)
+        val (projectedMaster, projectedNextStage, nextStageName) = calculateProjections(lifetimeMinutes, weeklyVelocity, zoneId)
+        val timeOfDaySlices = calculateTimeOfDaySlices(userSessions, zoneId)
+        val dayOfWeekSlices = calculateDayOfWeekSlices(userSessions, zoneId)
 
         return HabitDetailUiState(
             isLoading = false,
@@ -148,14 +148,16 @@ class HabitDetailViewModel(
             currentStreakDays = currentStreak,
             longestStreakDays = longestStreak,
             bestPracticeDayOfWeek = bestDay,
-            daysInvestedNonstop = daysInvestedNonstop,
-            booksEquivalent = booksEquivalent,
-            moviesEquivalent = moviesEquivalent,
             peakFocusWindow = peakFocus,
             weeklyVelocityHours = weeklyVelocity,
             consistencyScorePercent = consistencyScore,
             nextMilestoneHours = nextMilestoneHours,
             hoursToNextMilestone = hoursRemaining,
+            projectedMasterDate = projectedMaster,
+            projectedNextStageDate = projectedNextStage,
+            nextStageName = nextStageName,
+            timeOfDayPieSlices = timeOfDaySlices,
+            dayOfWeekPieSlices = dayOfWeekSlices,
             recentSessions = userSessions
                 .sortedByDescending { it.timestamp }
                 .map { SessionListItem(it.id, it.timestamp, it.durationMinutes, it.note) },
@@ -242,6 +244,101 @@ class HabitDetailViewModel(
         val nextMilestone = milestones.firstOrNull { it > lifetimeHours.toLong() } ?: 10000L
         val hoursRemaining = (nextMilestone - lifetimeHours).coerceAtLeast(0f)
         return Pair(nextMilestone, hoursRemaining)
+    }
+
+    private fun calculateProjections(
+        lifetimeMinutes: Long,
+        weeklyVelocityHours: Float,
+        zoneId: ZoneId
+    ): Triple<String, String, String> {
+        val nextStage = ProgressionStage.entries.firstOrNull { it.minHours > (lifetimeMinutes / 60) }
+        val today = LocalDate.now(zoneId)
+
+        val nextStageDate = if (nextStage == null) {
+            "Master Tier Reached!"
+        } else if (weeklyVelocityHours > 0.05f) {
+            val hoursNeeded = nextStage.minHours - (lifetimeMinutes / 60.0f)
+            val weeksNeeded = hoursNeeded / weeklyVelocityHours
+            val daysNeeded = (weeksNeeded * 7.0f).toLong().coerceAtLeast(1L)
+            today.plusDays(daysNeeded).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+        } else {
+            "Needs active velocity"
+        }
+
+        val masterHoursNeeded = 10_000.0f - (lifetimeMinutes / 60.0f)
+        val masterDate = if (masterHoursNeeded <= 0) {
+            "Master Achieved! 🏆"
+        } else if (weeklyVelocityHours > 0.05f) {
+            val weeksNeeded = masterHoursNeeded / weeklyVelocityHours
+            val daysNeeded = (weeksNeeded * 7.0f).toLong().coerceAtLeast(1L)
+            today.plusDays(daysNeeded).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+        } else {
+            "Log practice to calculate"
+        }
+
+        val nextStageName = nextStage?.displayName ?: "Master"
+        return Triple(masterDate, nextStageDate, nextStageName)
+    }
+
+    private fun calculateTimeOfDaySlices(sessions: List<PracticeSession>, zoneId: ZoneId): List<PieSliceData> {
+        if (sessions.isEmpty()) return emptyList()
+
+        var morning = 0L
+        var afternoon = 0L
+        var evening = 0L
+        var night = 0L
+
+        sessions.forEach { session ->
+            val hour = ZonedDateTime.ofInstant(session.timestamp, zoneId).hour
+            val mins = session.durationMinutes.toLong()
+            when (hour) {
+                in 5..11 -> morning += mins
+                in 12..16 -> afternoon += mins
+                in 17..21 -> evening += mins
+                else -> night += mins
+            }
+        }
+
+        val total = (morning + afternoon + evening + night).toFloat().coerceAtLeast(1f)
+        val slices = mutableListOf<PieSliceData>()
+
+        if (morning > 0) slices.add(PieSliceData("Morning (5a-12p)", morning, (morning / total) * 100f, "#00E5FF"))
+        if (afternoon > 0) slices.add(PieSliceData("Afternoon (12p-5p)", afternoon, (afternoon / total) * 100f, "#FFD54F"))
+        if (evening > 0) slices.add(PieSliceData("Evening (5p-10p)", evening, (evening / total) * 100f, "#E040FB"))
+        if (night > 0) slices.add(PieSliceData("Night (10p-5a)", night, (night / total) * 100f, "#7C4DFF"))
+
+        return slices
+    }
+
+    private fun calculateDayOfWeekSlices(sessions: List<PracticeSession>, zoneId: ZoneId): List<PieSliceData> {
+        if (sessions.isEmpty()) return emptyList()
+
+        val dayColors = mapOf(
+            java.time.DayOfWeek.MONDAY to "#80DEEA",
+            java.time.DayOfWeek.TUESDAY to "#80CBC4",
+            java.time.DayOfWeek.WEDNESDAY to "#A5D6A7",
+            java.time.DayOfWeek.THURSDAY to "#FFE082",
+            java.time.DayOfWeek.FRIDAY to "#FFAB91",
+            java.time.DayOfWeek.SATURDAY to "#CE93D8",
+            java.time.DayOfWeek.SUNDAY to "#F48FB1"
+        )
+
+        val minutesPerDay = sessions.groupBy {
+            ZonedDateTime.ofInstant(it.timestamp, zoneId).dayOfWeek
+        }.mapValues { entry -> entry.value.sumOf { it.durationMinutes.toLong() } }
+
+        val total = minutesPerDay.values.sum().toFloat().coerceAtLeast(1f)
+
+        return minutesPerDay.entries
+            .sortedBy { it.key.value }
+            .map { (day, mins) ->
+                PieSliceData(
+                    label = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                    minutes = mins,
+                    percentage = (mins / total) * 100f,
+                    colorHex = dayColors[day] ?: "#00E5FF"
+                )
+            }
     }
 
     private fun buildDistributionBuckets(

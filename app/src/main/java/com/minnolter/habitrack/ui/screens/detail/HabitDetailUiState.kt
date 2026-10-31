@@ -48,15 +48,17 @@ data class HabitDetailUiState(
     val longestStreakDays: Int = 0,
     val bestPracticeDayOfWeek: String = "N/A",
 
-    // Fun & Cosmic Statistics
-    val daysInvestedNonstop: Float = 0f,
-    val booksEquivalent: Float = 0f,
-    val moviesEquivalent: Float = 0f,
+    // Performance & Completion Analytics
     val peakFocusWindow: String = "N/A",
     val weeklyVelocityHours: Float = 0f,
     val consistencyScorePercent: Int = 0,
     val nextMilestoneHours: Long = 10L,
     val hoursToNextMilestone: Float = 10f,
+    val projectedMasterDate: String = "N/A",
+    val projectedNextStageDate: String = "N/A",
+    val nextStageName: String = "N/A",
+    val timeOfDayPieSlices: List<PieSliceData> = emptyList(),
+    val dayOfWeekPieSlices: List<PieSliceData> = emptyList(),
 
     // Session history
     val recentSessions: List<SessionListItem> = emptyList(),
@@ -70,6 +72,13 @@ data class HabitDetailUiState(
 data class DistributionBucket(
     val label: String,
     val minutes: Long
+)
+
+data class PieSliceData(
+    val label: String,
+    val minutes: Long,
+    val percentage: Float,
+    val colorHex: String
 )
 
 data class SessionListItem(
