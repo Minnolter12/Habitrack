@@ -3,6 +3,7 @@ package com.minnolter.habitrack.ui.screens.detail
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -241,44 +242,13 @@ fun HabitDetailScreen(
                     HeroHeader(uiState = uiState, accentColor = accentColor)
                 }
 
-                item(key = "edge_to_edge_filters") {
-                    Column(modifier = Modifier.padding(top = 16.dp)) {
-                        BreakdownFilterRow(
-                            selectedRange = uiState.selectedRange,
-                            onRangeSelected = onFilterSelected
-                        )
-                    }
-                }
-
-                item(key = "streak_badge") {
-                    StreakBadgeCard(
-                        currentStreakDays = uiState.currentStreakDays,
-                        longestStreakDays = uiState.longestStreakDays
+                item(key = "histogram_section") {
+                    PracticeRangeSection(
+                        uiState = uiState,
+                        accentColor = accentColor,
+                        onRangeSelected = onFilterSelected,
+                        onOffsetSelected = onOffsetSelected
                     )
-                }
-
-                item(key = "chart") {
-                    Column(modifier = Modifier.padding(top = 8.dp)) {
-                        FilteredTotalCaption(
-                            range = uiState.selectedRange,
-                            periodLabel = uiState.periodLabel,
-                            filteredMinutes = uiState.filteredMinutes,
-                            rangeOffset = uiState.selectedRangeOffset,
-                            onOffsetChanged = onOffsetSelected
-                        )
-                        DistributionBarChart(
-                            buckets = uiState.distributionBuckets,
-                            accentColor = accentColor,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 12.dp)
-                                .height(140.dp)
-                        )
-                    }
-                }
-
-                item(key = "insightful_stats_grid") {
-                    InsightfulStatsSection(uiState = uiState)
                 }
 
                 item(key = "performance_analytics") {
@@ -335,60 +305,96 @@ fun HabitDetailScreen(
 private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
     val isMaster = uiState.stage == ProgressionStage.MASTER
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .padding(horizontal = 20.dp)
-            .clip(RoundedCornerShape(28.dp))
-            .background(Color(0xFF1B1822).copy(alpha = 0.75f))
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
-        JellyProgressCanvas(
-            visualProgress = uiState.visualProgress,
-            stageColor = accentColor,
-            isMasterStage = isMaster,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = formatExactDuration(uiState.lifetimeMinutes),
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = uiState.stage.displayName,
-                style = MaterialTheme.typography.titleMedium,
-                color = accentColor,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-    }
-
-    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp)) {
-        LinearProgressIndicator(
-            progress = { uiState.actualProgress },
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = accentColor,
-            trackColor = accentColor.copy(alpha = 0.15f)
-        )
-        Text(
-            text = "${(uiState.actualProgress * 100).roundToInt()}% of the way to Master (10,000h)",
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.65f),
-            modifier = Modifier.padding(top = 6.dp)
-        )
+                .height(180.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF1B1822).copy(alpha = 0.85f))
+                .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)), shape = RoundedCornerShape(24.dp))
+        ) {
+            JellyProgressCanvas(
+                visualProgress = uiState.visualProgress,
+                stageColor = accentColor,
+                isMasterStage = isMaster,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = formatExactDuration(uiState.lifetimeMinutes),
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = uiState.stage.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = accentColor,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            color = Color(0x14FFFFFF),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🔥 Current Streak: ${uiState.currentStreakDays} days",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Longest: ${uiState.longestStreakDays} days",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.70f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                LinearProgressIndicator(
+                    progress = { uiState.actualProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = accentColor,
+                    trackColor = accentColor.copy(alpha = 0.15f)
+                )
+
+                Text(
+                    text = "${(uiState.actualProgress * 100).roundToInt()}% of Master (10,000h)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.65f),
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+        }
     }
 }
 
@@ -400,7 +406,6 @@ private fun BreakdownFilterRow(
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(HABIT_DETAIL_TIME_RANGES) { range ->
@@ -434,65 +439,53 @@ private fun BreakdownFilterRow(
 }
 
 @Composable
-private fun StreakBadgeCard(
-    currentStreakDays: Int,
-    longestStreakDays: Int
+private fun PracticeRangeSection(
+    uiState: HabitDetailUiState,
+    accentColor: Color,
+    onRangeSelected: (TimeRange) -> Unit,
+    onOffsetSelected: (Int) -> Unit
 ) {
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = Color(0x14FFFFFF),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
     ) {
-        Text(
-            text = "🔥 ",
-            style = MaterialTheme.typography.titleMedium
-        )
-        Text(
-            text = "Longest Streak: $longestStreakDays days",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-    }
-}
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "📊 Practice Histogram & Range",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF00E5FF)
+            )
 
-@Composable
-private fun InsightfulStatsSection(uiState: HabitDetailUiState) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                title = "Avg Daily Practice",
-                value = formatExactDuration(uiState.averageSessionMinutes),
-                modifier = Modifier.weight(1f)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            BreakdownFilterRow(
+                selectedRange = uiState.selectedRange,
+                onRangeSelected = onRangeSelected
             )
-            StatCard(
-                title = "Longest Session",
-                value = formatExactDuration(uiState.longestSessionMinutes),
-                modifier = Modifier.weight(1f)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            FilteredTotalCaption(
+                range = uiState.selectedRange,
+                periodLabel = uiState.periodLabel,
+                filteredMinutes = uiState.filteredMinutes,
+                rangeOffset = uiState.selectedRangeOffset,
+                onOffsetChanged = onOffsetSelected
             )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                title = "Best Practice Day",
-                value = uiState.bestPracticeDayOfWeek,
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                title = "Total Sessions",
-                value = "${uiState.sessionCount} sessions",
-                modifier = Modifier.weight(1f)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            DistributionBarChart(
+                buckets = uiState.distributionBuckets,
+                accentColor = accentColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
             )
         }
     }
@@ -500,65 +493,166 @@ private fun InsightfulStatsSection(uiState: HabitDetailUiState) {
 
 @Composable
 private fun PerformanceAnalyticsSection(uiState: HabitDetailUiState) {
-    Column(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = Color(0x14FFFFFF),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
     ) {
-        Text(
-            text = "📈 Completion & Performance Projections",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF00E5FF),
-            modifier = Modifier.padding(bottom = 2.dp, start = 4.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            StatCard(
-                title = "Projected Master (10k hrs)",
-                value = uiState.projectedMasterDate,
-                modifier = Modifier.weight(1f)
+            Text(
+                text = "📈 Completion Projections & Pace",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF00E5FF)
             )
-            StatCard(
+
+            FullWidthStatRow(
+                title = "Projected Master Date (10,000h)",
+                value = uiState.projectedMasterDate,
+                subtitle = "Pace: ${String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours)}"
+            )
+
+            FullWidthStatRow(
                 title = "Projected ${uiState.nextStageName}",
                 value = uiState.projectedNextStageDate,
-                modifier = Modifier.weight(1f)
+                subtitle = "Next Milestone: ${uiState.nextMilestoneHours}h (${String.format(Locale.US, "%.1fh remaining", uiState.hoursToNextMilestone)})"
+            )
+
+            FullWidthStatRow(
+                title = "Best Practice Day",
+                value = uiState.bestPracticeDayOfWeek,
+                subtitle = "Highest duration logged"
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CompactStatCard(
+                    title = "Avg Daily Practice",
+                    value = formatExactDuration(uiState.averageSessionMinutes),
+                    modifier = Modifier.weight(1f)
+                )
+                CompactStatCard(
+                    title = "30-Day Active Rate",
+                    value = "${uiState.consistencyScorePercent}% active",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CompactStatCard(
+                    title = "Longest Session",
+                    value = formatExactDuration(uiState.longestSessionMinutes),
+                    modifier = Modifier.weight(1f)
+                )
+                CompactStatCard(
+                    title = "Total Sessions",
+                    value = "${uiState.sessionCount} sessions",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CompactStatCard(
+                    title = "Peak Focus Window",
+                    value = uiState.peakFocusWindow,
+                    modifier = Modifier.weight(1f)
+                )
+                CompactStatCard(
+                    title = "Weekly Velocity",
+                    value = String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FullWidthStatRow(
+    title: String,
+    value: String,
+    subtitle: String? = null
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0x18FFFFFF),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.65f)
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.45f),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
+    }
+}
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                title = "Weekly Velocity",
-                value = String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours),
-                modifier = Modifier.weight(1f)
+@Composable
+private fun CompactStatCard(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0x18FFFFFF),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.65f),
+                maxLines = 1
             )
-            StatCard(
-                title = "30-Day Active Rate",
-                value = "${uiState.consistencyScorePercent}% active",
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                title = "Peak Focus Window",
-                value = uiState.peakFocusWindow,
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                title = "Next Milestone (${uiState.nextMilestoneHours}h)",
-                value = String.format(Locale.US, "%.1fh left", uiState.hoursToNextMilestone),
-                modifier = Modifier.weight(1f)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.padding(top = 4.dp),
+                maxLines = 1
             )
         }
     }
