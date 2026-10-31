@@ -253,7 +253,6 @@ fun HomeScreen(
                 onTimeRangeSelected = onTimeRangeSelected,
                 onHabitTap = onHabitTap,
                 onHabitLongPress = onHabitLongPress,
-                onReorderModeClick = onReorderModeClick,
                 modifier = Modifier.padding(contentPadding)
             )
         }
@@ -268,7 +267,6 @@ private fun HomeContent(
     onTimeRangeSelected: (TimeRange) -> Unit,
     onHabitTap: (HabitSummary) -> Unit,
     onHabitLongPress: (HabitSummary) -> Unit,
-    onReorderModeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -282,34 +280,6 @@ private fun HomeContent(
                 habitCount = uiState.habits.size,
                 onRangeSelected = onTimeRangeSelected
             )
-        }
-
-        if (uiState.habits.size > 1) {
-            item(key = "reorder_shortcut") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onReorderModeClick) {
-                        Icon(
-                            imageVector = Icons.Filled.Reorder,
-                            contentDescription = null,
-                            tint = Color(0xFF00E5FF),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Reorder Habits",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color(0xFF00E5FF),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
         }
 
         items(items = uiState.habits, key = { it.habit.id }) { summary ->
