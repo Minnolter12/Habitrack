@@ -127,7 +127,6 @@ class HabitDetailViewModel(
             bestPracticeDayOfWeek = bestDay,
             recentSessions = userSessions
                 .sortedByDescending { it.timestamp }
-                .take(MAX_RECENT_SESSIONS)
                 .map { SessionListItem(it.id, it.timestamp, it.durationMinutes, it.note) },
             dialogState = dialog,
             isDeleted = false
@@ -362,9 +361,7 @@ class HabitDetailViewModel(
         val longestSession: PracticeSession?
     )
 
-    private companion object {
-        const val MAX_RECENT_SESSIONS = 200
-    }
+
 }
 
 class HabitDetailViewModelFactory(

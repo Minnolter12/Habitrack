@@ -514,6 +514,7 @@ private fun CollapsibleRecentSessions(
     onSessionDelete: (Long) -> Unit
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var visibleCount by rememberSaveable { mutableStateOf(20) }
 
     Surface(
         modifier = Modifier
@@ -553,13 +554,30 @@ private fun CollapsibleRecentSessions(
                         color = Color.White.copy(alpha = 0.6f)
                     )
                 } else {
-                    sessions.take(30).forEach { session ->
+                    val displayedSessions = sessions.take(visibleCount)
+                    displayedSessions.forEach { session ->
                         SessionRow(
                             session = session,
                             onClick = { onSessionClick(session.id) },
                             onDelete = { onSessionDelete(session.id) }
                         )
                         Spacer(modifier = Modifier.height(6.dp))
+                    }
+
+                    if (visibleCount < sessions.size) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = { visibleCount += 20 },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                        ) {
+                            Text(
+                                text = "Load More (${sessions.size - visibleCount} remaining)",
+                                color = Color(0xFF00E5FF),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
