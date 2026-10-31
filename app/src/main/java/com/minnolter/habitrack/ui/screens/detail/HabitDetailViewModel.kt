@@ -14,6 +14,7 @@ import java.time.LocalDate
 import java.time.Month
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +34,7 @@ class HabitDetailViewModel(
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : ViewModel() {
 
-    private val selectedRange = MutableStateFlow(TimeRange.LIFETIME)
+    private val selectedRange = MutableStateFlow(TimeRange.MONTH)
     private val dialogState = MutableStateFlow<HabitDetailDialogState>(HabitDetailDialogState.None)
     private val isDeleted = MutableStateFlow(false)
 
@@ -93,8 +94,13 @@ class HabitDetailViewModel(
         }
 
         val userSessionCount = userSessions.size
-        val averageSessionMinutes = if (userSessionCount > 0) {
-            userSessions.sumOf { it.durationMinutes.toLong() } / userSessionCount
+        val activeDaysCount = userSessions.map {
+            ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate()
+        }.distinct().size
+
+        val totalUserMinutes = userSessions.sumOf { it.durationMinutes.toLong() }
+        val averageSessionMinutes = if (activeDaysCount > 0) {
+            totalUserMinutes / activeDaysCount
         } else {
             0L
         }
@@ -102,7 +108,7 @@ class HabitDetailViewModel(
         val longestSessionMinutes = userSessions.maxOfOrNull { it.durationMinutes.toLong() } ?: 0L
 
         val (currentStreak, longestStreak) = calculateStreaks(userSessions, zoneId)
-        val bestDay = calculateBestDayOfWeek(userSessions, zoneId)
+        val bestDay = calculateBestPracticeDay(userSessions, zoneId)
 
         return HabitDetailUiState(
             isLoading = false,
@@ -173,14 +179,14 @@ class HabitDetailViewModel(
         return Pair(currentStreak, longestStreak)
     }
 
-    private fun calculateBestDayOfWeek(sessions: List<PracticeSession>, zoneId: ZoneId): String {
+    private fun calculateBestPracticeDay(sessions: List<PracticeSession>, zoneId: ZoneId): String {
         if (sessions.isEmpty()) return "N/A"
-        val dayMinutesMap = sessions.groupBy {
-            ZonedDateTime.ofInstant(it.timestamp, zoneId).dayOfWeek
+        val dateMinutesMap = sessions.groupBy {
+            ZonedDateTime.ofInstant(it.timestamp, zoneId).toLocalDate()
         }.mapValues { entry -> entry.value.sumOf { it.durationMinutes } }
 
-        val bestDay = dayMinutesMap.maxByOrNull { it.value }?.key ?: return "N/A"
-        return bestDay.getDisplayName(TextStyle.FULL, Locale.getDefault())
+        val bestDate = dateMinutesMap.maxByOrNull { it.value }?.key ?: return "N/A"
+        return bestDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy (EEEE)"))
     }
 
     private fun buildDistributionBuckets(

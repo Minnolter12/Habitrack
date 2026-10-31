@@ -454,7 +454,7 @@ private fun InsightfulStatsSection(uiState: HabitDetailUiState) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCard(
-                title = "Avg Session Length",
+                title = "Avg Daily Practice",
                 value = formatExactDuration(uiState.averageSessionMinutes),
                 modifier = Modifier.weight(1f)
             )
