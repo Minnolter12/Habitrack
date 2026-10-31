@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
@@ -72,6 +73,7 @@ fun SettingsRoute(
     modifier: Modifier = Modifier
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -100,9 +102,12 @@ fun SettingsRoute(
 
     SettingsScreen(
         settings = settings,
+        authState = authState,
         backupState = backupState,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
+        onSignInWithGoogleClick = { viewModel.signInWithGoogle(context) },
+        onSignOutClick = viewModel::signOut,
         onReducedMotionChanged = viewModel::setReducedMotionForced,
         onFeedbackChanged = viewModel::setFeedbackEnabled,
         onFluidOpacityChanged = viewModel::setFluidOpacity,
@@ -125,9 +130,12 @@ fun SettingsRoute(
 @Composable
 fun SettingsScreen(
     settings: AppSettings,
+    authState: com.minnolter.habitrack.data.auth.AuthUserState = com.minnolter.habitrack.data.auth.AuthUserState(),
     backupState: BackupOperationState,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
+    onSignInWithGoogleClick: () -> Unit = {},
+    onSignOutClick: () -> Unit = {},
     onReducedMotionChanged: (Boolean) -> Unit,
     onFeedbackChanged: (Boolean) -> Unit,
     onFluidOpacityChanged: (Float) -> Unit = {},
@@ -166,6 +174,51 @@ fun SettingsScreen(
                 .padding(contentPadding)
                 .fillMaxWidth()
         ) {
+            item { SectionHeader("Account & Cloud Sync") }
+            if (authState.isAuthenticated) {
+                item {
+                    ListItem(
+                        headlineContent = { Text(authState.displayName ?: "Google User", fontWeight = FontWeight.Bold) },
+                        supportingContent = { Text(authState.email ?: "Cloud sync active") },
+                        leadingContent = {
+                            Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = Color(0xFF00E5FF))
+                        },
+                        trailingContent = {
+                            TextButton(onClick = onSignOutClick) {
+                                Text("Sign Out", color = Color(0xFFFF5252))
+                            }
+                        }
+                    )
+                }
+            } else {
+                item {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        ListItem(
+                            headlineContent = { Text("Sign in with Google", fontWeight = FontWeight.Bold) },
+                            supportingContent = { Text("Back up your habits & sessions and sync across devices") },
+                            leadingContent = {
+                                Icon(Icons.Filled.CloudUpload, contentDescription = null, tint = Color(0xFF00E5FF))
+                            },
+                            modifier = Modifier.clickable(onClick = onSignInWithGoogleClick)
+                        )
+                        Button(
+                            onClick = onSignInWithGoogleClick,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF7C4DFF),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        ) {
+                            Text("Sign in with Google", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            item { HorizontalDivider() }
             item { SectionHeader("Organization") }
             item {
                 ListItem(

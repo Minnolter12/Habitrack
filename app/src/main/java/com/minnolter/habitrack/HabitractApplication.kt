@@ -43,4 +43,14 @@ class HabitractApplication : Application() {
     val backupManager: DatabaseBackupManager by lazy {
         DatabaseBackupManager(this)
     }
+
+    val authManager: com.minnolter.habitrack.data.auth.FirebaseAuthManager by lazy {
+        com.minnolter.habitrack.data.auth.FirebaseAuthManager(this)
+    }
+
+    val syncManager: com.minnolter.habitrack.data.sync.FirestoreSyncManager by lazy {
+        com.minnolter.habitrack.data.sync.FirestoreSyncManager(repository, authManager).also {
+            it.startSyncing()
+        }
+    }
 }

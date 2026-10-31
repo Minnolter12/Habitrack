@@ -32,12 +32,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val app = application as HabitractApplication
+        app.syncManager.startSyncing()
 
         setContent {
             HabitractRoot(
                 repository = app.repository,
                 settingsDataStore = app.settingsDataStore,
-                backupManager = app.backupManager
+                backupManager = app.backupManager,
+                authManager = app.authManager
             )
         }
     }
@@ -47,10 +49,11 @@ class MainActivity : ComponentActivity() {
 private fun HabitractRoot(
     repository: HabitractRepository,
     settingsDataStore: SettingsDataStore,
-    backupManager: DatabaseBackupManager
+    backupManager: DatabaseBackupManager,
+    authManager: com.minnolter.habitrack.data.auth.FirebaseAuthManager
 ) {
     val settingsViewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModelFactory(repository, settingsDataStore, backupManager)
+        factory = SettingsViewModelFactory(repository, settingsDataStore, backupManager, authManager)
     )
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
 
@@ -75,7 +78,8 @@ private fun HabitractRoot(
                 HabitractNavHost(
                     repository = repository,
                     settingsDataStore = settingsDataStore,
-                    backupManager = backupManager
+                    backupManager = backupManager,
+                    authManager = authManager
                 )
             }
         }

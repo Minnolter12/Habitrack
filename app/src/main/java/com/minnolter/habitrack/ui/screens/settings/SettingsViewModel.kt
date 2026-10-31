@@ -1,9 +1,12 @@
 package com.minnolter.habitrack.ui.screens.settings
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.minnolter.habitrack.data.auth.AuthUserState
+import com.minnolter.habitrack.data.auth.FirebaseAuthManager
 import com.minnolter.habitrack.data.local.DatabaseBackupManager
 import com.minnolter.habitrack.data.local.datastore.AppSettings
 import com.minnolter.habitrack.data.local.datastore.SettingsDataStore
@@ -27,7 +30,8 @@ sealed interface BackupOperationState {
 class SettingsViewModel(
     private val repository: HabitractRepository,
     private val settingsDataStore: SettingsDataStore,
-    private val backupManager: DatabaseBackupManager
+    private val backupManager: DatabaseBackupManager,
+    private val authManager: FirebaseAuthManager
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = settingsDataStore.settings.stateIn(
@@ -36,8 +40,24 @@ class SettingsViewModel(
         initialValue = AppSettings()
     )
 
+    val authState: StateFlow<AuthUserState> = authManager.authState.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000L),
+        initialValue = AuthUserState()
+    )
+
     private val _backupState = MutableStateFlow<BackupOperationState>(BackupOperationState.Idle)
     val backupState: StateFlow<BackupOperationState> = _backupState.asStateFlow()
+
+    fun signInWithGoogle(activityContext: Context) {
+        viewModelScope.launch {
+            authManager.signInWithGoogle(activityContext)
+        }
+    }
+
+    fun signOut() {
+        authManager.signOut()
+    }
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsDataStore.setThemeMode(mode) }
@@ -111,13 +131,14 @@ class SettingsViewModel(
 class SettingsViewModelFactory(
     private val repository: HabitractRepository,
     private val settingsDataStore: SettingsDataStore,
-    private val backupManager: DatabaseBackupManager
+    private val backupManager: DatabaseBackupManager,
+    private val authManager: FirebaseAuthManager
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
             "Unknown ViewModel class: $modelClass"
         }
         @Suppress("UNCHECKED_CAST")
-        return SettingsViewModel(repository, settingsDataStore, backupManager) as T
+        return SettingsViewModel(repository, settingsDataStore, backupManager, authManager) as T
     }
 }

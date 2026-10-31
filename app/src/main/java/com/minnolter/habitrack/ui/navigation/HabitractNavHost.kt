@@ -64,6 +64,7 @@ fun HabitractNavHost(
     repository: HabitractRepository,
     settingsDataStore: SettingsDataStore,
     backupManager: DatabaseBackupManager,
+    authManager: com.minnolter.habitrack.data.auth.FirebaseAuthManager,
     navController: NavHostController = rememberNavController()
 ) {
     NavHost(
@@ -130,7 +131,7 @@ fun HabitractNavHost(
 
         composable<Destination.Settings> {
             val settingsViewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModelFactory(repository, settingsDataStore, backupManager)
+                factory = SettingsViewModelFactory(repository, settingsDataStore, backupManager, authManager)
             )
 
             SettingsRoute(

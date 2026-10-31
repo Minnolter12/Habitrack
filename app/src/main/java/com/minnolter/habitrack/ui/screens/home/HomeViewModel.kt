@@ -118,6 +118,12 @@ class HomeViewModel(
         selectedTimeRange.value = range
     }
 
+    fun dismissWhatsNewSheet(version: String) {
+        viewModelScope.launch {
+            settingsDataStore.setLastSeenWhatsNewVersion(version)
+        }
+    }
+
     /**
      * Persists a full drag-to-reorder result from Reorder mode (Section 24).
      * [habitIdsInOrder] must contain every habit id, in its new top-to-bottom
