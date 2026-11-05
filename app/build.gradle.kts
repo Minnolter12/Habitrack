@@ -18,6 +18,7 @@ android {
         versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appName"] = "Habitrack"
 
         //noinspection WrongGradleMethod
         ksp {
@@ -33,6 +34,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            applicationIdSuffix = ".nightly"
+            manifestPlaceholders["appName"] = "habitrack nightly"
         }
     }
 
