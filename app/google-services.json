@@ -12,7 +12,12 @@
           "package_name": "com.minnolter.habitrack"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCamFRYaN4ol6XphVVr-GMUaG1PEszYC9k"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -31,7 +41,12 @@
           "package_name": "com.minnolter.habitrack.nightly"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCamFRYaN4ol6XphVVr-GMUaG1PEszYC9k"
@@ -39,7 +54,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
