@@ -271,13 +271,17 @@ fun HabitractNavHost(
                 items = navItems,
                 currentRoute = activeRoute,
                 onItemSelected = { item ->
+                    if (item.route == activeRoute) return@TranslucentPillNavigationBar
+
                     if (item.route == "home") {
                         navController.navigate(Destination.Home) {
                             popUpTo(Destination.Home) { inclusive = true }
+                            launchSingleTop = true
                         }
                     } else if (item.route == "settings") {
                         navController.navigate(Destination.Settings) {
                             popUpTo(Destination.Home)
+                            launchSingleTop = true
                         }
                     }
                 },
