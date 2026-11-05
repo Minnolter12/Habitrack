@@ -302,10 +302,10 @@ class HabitDetailViewModel(
         val total = (morning + afternoon + evening + night).toFloat().coerceAtLeast(1f)
         val slices = mutableListOf<PieSliceData>()
 
-        if (morning > 0) slices.add(PieSliceData("Morning (5a-12p)", morning, (morning / total) * 100f, "#00E5FF"))
-        if (afternoon > 0) slices.add(PieSliceData("Afternoon (12p-5p)", afternoon, (afternoon / total) * 100f, "#FFD54F"))
-        if (evening > 0) slices.add(PieSliceData("Evening (5p-10p)", evening, (evening / total) * 100f, "#E040FB"))
-        if (night > 0) slices.add(PieSliceData("Night (10p-5a)", night, (night / total) * 100f, "#7C4DFF"))
+        if (morning > 0) slices.add(PieSliceData("Morning", morning, (morning / total) * 100f, "#00E5FF"))
+        if (afternoon > 0) slices.add(PieSliceData("Afternoon", afternoon, (afternoon / total) * 100f, "#FFD54F"))
+        if (evening > 0) slices.add(PieSliceData("Evening", evening, (evening / total) * 100f, "#E040FB"))
+        if (night > 0) slices.add(PieSliceData("Night", night, (night / total) * 100f, "#7C4DFF"))
 
         return slices
     }

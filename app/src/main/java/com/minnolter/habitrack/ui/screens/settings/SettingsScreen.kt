@@ -1,9 +1,8 @@
 package com.minnolter.habitrack.ui.screens.settings
 
-import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,29 +16,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.Alignment
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,6 +48,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -60,16 +57,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.minnolter.habitrack.data.local.datastore.AppSettings
 import com.minnolter.habitrack.util.restartApp
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsRoute(
     viewModel: SettingsViewModel,
     onBack: () -> Unit,
-    onReorderHabitsClick: () -> Unit,
+    onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -78,14 +72,6 @@ fun SettingsRoute(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/octet-stream")
-    ) { uri -> uri?.let(viewModel::exportDatabase) }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri -> uri?.let(viewModel::importDatabase) }
 
     LaunchedEffect(backupState) {
         val message = when (val state = backupState) {
@@ -106,18 +92,12 @@ fun SettingsRoute(
         backupState = backupState,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
+        onAboutClick = onAboutClick,
         onSignInWithGoogleClick = { viewModel.signInWithGoogle(context) },
         onSignOutClick = viewModel::signOut,
-        onReducedMotionChanged = viewModel::setReducedMotionForced,
         onFeedbackEnabledChanged = viewModel::setFeedbackEnabled,
-        onDailyRemindersChanged = viewModel::setDailyRemindersEnabled,
         onFluidOpacityChanged = viewModel::setFluidOpacity,
         onImageOpacityChanged = viewModel::setImageOpacity,
-        onReorderHabitsClick = onReorderHabitsClick,
-        onExportClick = { exportLauncher.launch(defaultBackupFileName()) },
-        onImportClick = {
-            importLauncher.launch(arrayOf("application/octet-stream", "application/x-sqlite3", "*/*"))
-        },
         onResetAppConfirmed = {
             viewModel.resetEntireApp { restartApp(context) }
         },
@@ -135,32 +115,20 @@ fun SettingsScreen(
     backupState: BackupOperationState,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
+    onAboutClick: () -> Unit = {},
     onSignInWithGoogleClick: () -> Unit = {},
     onSignOutClick: () -> Unit = {},
-    onReducedMotionChanged: (Boolean) -> Unit,
-    onFeedbackEnabledChanged: (Boolean) -> Unit,
-    onDailyRemindersChanged: (Boolean) -> Unit = {},
+    onFeedbackEnabledChanged: (Boolean) -> Unit = {},
     onFluidOpacityChanged: (Float) -> Unit = {},
     onImageOpacityChanged: (Float) -> Unit = {},
-    onReorderHabitsClick: () -> Unit,
-    onExportClick: () -> Unit,
-    onImportClick: () -> Unit,
-    onResetAppConfirmed: () -> Unit,
-    onRestartNow: () -> Unit,
-    onDismissRestartDialog: () -> Unit,
+    onResetAppConfirmed: () -> Unit = {},
+    onRestartNow: () -> Unit = {},
+    onDismissRestartDialog: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val backupInProgress = backupState is BackupOperationState.InProgress
     var showResetDialog1 by remember { mutableStateOf(false) }
     var showResetDialog2 by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
-
-    val notifPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        onDailyRemindersChanged(granted)
-    }
 
     Scaffold(
         modifier = modifier,
@@ -181,212 +149,191 @@ fun SettingsScreen(
         LazyColumn(
             modifier = Modifier
                 .padding(contentPadding)
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { SectionHeader("Account & Cloud Sync") }
-            if (authState.isAuthenticated) {
-                item {
-                    ListItem(
-                        headlineContent = { Text(authState.displayName ?: "Google User", fontWeight = FontWeight.Bold) },
-                        supportingContent = { Text(authState.email ?: "Cloud sync active") },
-                        leadingContent = {
-                            Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = Color(0xFF00E5FF))
-                        },
-                        trailingContent = {
-                            TextButton(onClick = onSignOutClick) {
-                                Text("Sign Out", color = Color(0xFFFF5252))
-                            }
-                        }
-                    )
-                }
-            } else {
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+            // 1. Floating Sign in with Google Card
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0x14FFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                ) {
+                    if (authState.isAuthenticated) {
                         ListItem(
-                            headlineContent = { Text("Sign in with Google", fontWeight = FontWeight.Bold) },
-                            supportingContent = { Text("Back up your habits & sessions and sync across devices") },
+                            headlineContent = { Text(authState.displayName ?: "Google User", fontWeight = FontWeight.Bold, color = Color.White) },
+                            supportingContent = { Text(authState.email ?: "Cloud sync active", color = Color.White.copy(alpha = 0.7f)) },
                             leadingContent = {
-                                Icon(Icons.Filled.CloudUpload, contentDescription = null, tint = Color(0xFF00E5FF))
+                                Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = Color(0xFF00E5FF))
                             },
-                            modifier = Modifier.clickable(onClick = onSignInWithGoogleClick)
+                            trailingContent = {
+                                TextButton(onClick = onSignOutClick) {
+                                    Text("Sign Out", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                         )
-                        Button(
-                            onClick = onSignInWithGoogleClick,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF7C4DFF),
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
-                        ) {
-                            Text("Sign in with Google", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-
-            item { HorizontalDivider() }
-            item { SectionHeader("Organization") }
-            item {
-                ListItem(
-                    headlineContent = { Text("Reorder habits") },
-                    supportingContent = { Text("Drag to change the order shown on Home") },
-                    leadingContent = { Icon(Icons.Filled.Reorder, contentDescription = null) },
-                    modifier = Modifier.clickable(onClick = onReorderHabitsClick)
-                )
-            }
-
-            item { HorizontalDivider() }
-            item { SectionHeader("Accessibility") }
-            item {
-                ListItem(
-                    headlineContent = { Text("Reduce motion") },
-                    supportingContent = { Text("Calms the jelly animation & 3D tilt, in addition to your system setting") },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.reducedMotionForced,
-                            onCheckedChange = onReducedMotionChanged
-                        )
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text("Sound & haptic feedback") },
-                    supportingContent = { Text("A short buzz when you log practice time") },
-                    leadingContent = { Icon(Icons.Filled.Vibration, contentDescription = null) },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.feedbackEnabled,
-                            onCheckedChange = onFeedbackEnabledChanged
-                        )
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text("Daily Duolingo-style Reminders") },
-                    supportingContent = { Text("Playful daily prompts if you haven't logged practice hours") },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.dailyRemindersEnabled,
-                            onCheckedChange = { enabled ->
-                                if (enabled && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                    val permission = android.Manifest.permission.POST_NOTIFICATIONS
-                                    val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                        context, permission
-                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-                                    if (!hasPermission) {
-                                        notifPermissionLauncher.launch(permission)
-                                    } else {
-                                        onDailyRemindersChanged(true)
-                                    }
-                                } else {
-                                    onDailyRemindersChanged(enabled)
+                    } else {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(Icons.Filled.CloudUpload, contentDescription = null, tint = Color(0xFF00E5FF))
+                                Column {
+                                    Text("Sign in with Google", fontWeight = FontWeight.Bold, color = Color.White)
+                                    Text(
+                                        "Back up habits & sessions and sync across devices",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.White.copy(alpha = 0.70f)
+                                    )
                                 }
                             }
-                        )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = onSignInWithGoogleClick,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF7C4DFF),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Sign in with Google", fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
-                )
-            }
-
-            item { HorizontalDivider() }
-            item { SectionHeader("Card Opacity & Customization") }
-            item {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Card Fluid Fill Opacity", fontWeight = FontWeight.Medium)
-                        Text(
-                            text = "${(settings.fluidOpacity * 100).toInt()}%",
-                            color = Color(0xFF00E5FF),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Slider(
-                        value = settings.fluidOpacity,
-                        onValueChange = onFluidOpacityChanged,
-                        valueRange = 0f..1f,
-                        colors = SliderDefaults.colors(
-                            thumbColor = Color(0xFF00E5FF),
-                            activeTrackColor = Color(0xFF00E5FF)
-                        ),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
                 }
             }
+
+            // 2. Sound & Haptic Feedback Card
             item {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Card Background Image Opacity", fontWeight = FontWeight.Medium)
-                        Text(
-                            text = "${(settings.imageOpacity * 100).toInt()}%",
-                            color = Color(0xFF00E5FF),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Slider(
-                        value = settings.imageOpacity,
-                        onValueChange = onImageOpacityChanged,
-                        valueRange = 0f..1f,
-                        colors = SliderDefaults.colors(
-                            thumbColor = Color(0xFF00E5FF),
-                            activeTrackColor = Color(0xFF00E5FF)
-                        ),
-                        modifier = Modifier.padding(top = 4.dp)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0x14FFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                ) {
+                    ListItem(
+                        headlineContent = { Text("Sound & haptic feedback", color = Color.White, fontWeight = FontWeight.Medium) },
+                        supportingContent = { Text("A short buzz when you log practice time", color = Color.White.copy(alpha = 0.7f)) },
+                        leadingContent = { Icon(Icons.Filled.Vibration, contentDescription = null, tint = Color(0xFF00E5FF)) },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.feedbackEnabled,
+                                onCheckedChange = onFeedbackEnabledChanged
+                            )
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
                 }
             }
 
-            item { HorizontalDivider() }
-            item { SectionHeader("Backup") }
+            // 3. Floating Opacity Customization Card
             item {
-                ListItem(
-                    headlineContent = { Text("Export backup") },
-                    supportingContent = { Text("Save all habits and sessions to a file") },
-                    leadingContent = { Icon(Icons.Filled.CloudUpload, contentDescription = null) },
-                    modifier = Modifier.clickable(enabled = !backupInProgress, onClick = onExportClick)
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text("Restore from backup") },
-                    supportingContent = { Text("Replaces everything currently on this device") },
-                    leadingContent = { Icon(Icons.Filled.CloudDownload, contentDescription = null) },
-                    modifier = Modifier.clickable(enabled = !backupInProgress, onClick = onImportClick)
-                )
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0x14FFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Card Fluid Fill Opacity", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                text = "${(settings.fluidOpacity * 100).toInt()}%",
+                                color = Color(0xFF00E5FF),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Slider(
+                            value = settings.fluidOpacity,
+                            onValueChange = onFluidOpacityChanged,
+                            valueRange = 0f..1f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(0xFF00E5FF),
+                                activeTrackColor = Color(0xFF00E5FF)
+                            ),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Card Background Image Opacity", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                text = "${(settings.imageOpacity * 100).toInt()}%",
+                                color = Color(0xFF00E5FF),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Slider(
+                            value = settings.imageOpacity,
+                            onValueChange = onImageOpacityChanged,
+                            valueRange = 0f..1f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(0xFF00E5FF),
+                                activeTrackColor = Color(0xFF00E5FF)
+                            ),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
             }
 
-            item { HorizontalDivider() }
-            item { SectionHeader("About") }
+            // 4. Reset Entire App
             item {
-                ListItem(
-                    headlineContent = { Text("About Habitrack", fontWeight = FontWeight.SemiBold) },
-                    supportingContent = { Text("v0.3.0 • Developed by Dev Madhav • GitHub") },
-                    leadingContent = { Icon(Icons.Filled.Info, contentDescription = null, tint = Color(0xFF00E5FF)) },
-                    modifier = Modifier.clickable { showAboutDialog = true }
-                )
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0x14FFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                ) {
+                    ListItem(
+                        headlineContent = { Text("Reset Entire App", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold) },
+                        supportingContent = { Text("Permanently erases all habits, sessions, and preferences", color = Color.White.copy(alpha = 0.70f)) },
+                        leadingContent = { Icon(Icons.Filled.DeleteForever, contentDescription = null, tint = Color(0xFFFF5252)) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.clickable(enabled = !backupInProgress) { showResetDialog1 = true }
+                    )
+                }
             }
 
-            item { HorizontalDivider() }
-            item { SectionHeader("Danger Zone", color = Color(0xFFFF5252)) }
+            // 5. About Screen Navigation
             item {
-                ListItem(
-                    headlineContent = { Text("Reset Entire App", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold) },
-                    supportingContent = { Text("Permanently erases all habits, sessions, and preferences") },
-                    leadingContent = { Icon(Icons.Filled.DeleteForever, contentDescription = null, tint = Color(0xFFFF5252)) },
-                    modifier = Modifier.clickable(enabled = !backupInProgress) { showResetDialog1 = true }
-                )
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0x14FFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                ) {
+                    ListItem(
+                        headlineContent = { Text("About Habitrack", color = Color.White, fontWeight = FontWeight.SemiBold) },
+                        supportingContent = { Text("v0.5.0 • Developed by minnolter12 (Dev Madhav)", color = Color.White.copy(alpha = 0.70f)) },
+                        leadingContent = { Icon(Icons.Filled.Info, contentDescription = null, tint = Color(0xFF00E5FF)) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.clickable(onClick = onAboutClick)
+                    )
+                }
             }
 
             if (backupInProgress) {
@@ -397,7 +344,7 @@ fun SettingsScreen(
                             .padding(24.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = Color(0xFF00E5FF))
                     }
                 }
             }
@@ -453,112 +400,4 @@ fun SettingsScreen(
             dismissButton = { TextButton(onClick = onDismissRestartDialog) { Text("Later") } }
         )
     }
-
-    if (showAboutDialog) {
-        AboutDialog(onDismiss = { showAboutDialog = false })
-    }
-}
-
-@Composable
-private fun AboutDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val githubUrl = "https://github.com/Minnolter12/Habitrack"
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = null,
-                    tint = Color(0xFF00E5FF)
-                )
-                Text("About Habitrack", fontWeight = FontWeight.Bold)
-            }
-        },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Habitrack",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = "Version 0.3.0",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFF00E5FF),
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-                Text(
-                    text = "Time shapes you.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.65f),
-                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-                )
-
-                HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Crafted with ❤ by Dev Madhav",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-                Text(
-                    text = "An open-source, privacy-first 10,000-hour mastery & habit tracker.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.70f),
-                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-                )
-
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubUrl))
-                        context.startActivity(intent)
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7C4DFF),
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Code,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text("Visit GitHub Repository", fontWeight = FontWeight.Bold)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close", color = Color(0xFF00E5FF))
-            }
-        }
-    )
-}
-
-@Composable
-private fun SectionHeader(title: String, color: Color = Color(0xFF00E5FF)) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = color,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-    )
-}
-
-private fun defaultBackupFileName(): String {
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    return "habitract_backup_$timestamp.db"
 }

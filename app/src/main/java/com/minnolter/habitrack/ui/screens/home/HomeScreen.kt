@@ -188,13 +188,6 @@ fun HomeScreen(
                                     Icon(Icons.Filled.Reorder, contentDescription = "Reorder habits", tint = Color.White)
                                 }
                             }
-                            IconButton(onClick = onSettingsClick) {
-                                Icon(
-                                    imageVector = Icons.Filled.Settings,
-                                    contentDescription = "Settings",
-                                    tint = Color.White
-                                )
-                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -212,19 +205,19 @@ fun HomeScreen(
         },
         floatingActionButton = {
             if (!uiState.isEmpty && !isReorderMode) {
-                ExtendedFloatingActionButton(
+                androidx.compose.material3.FloatingActionButton(
                     onClick = onAddHabitClick,
-                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    text = { Text("Add Habit", fontWeight = FontWeight.SemiBold) },
-                    shape = RoundedCornerShape(percent = 50),
+                    shape = RoundedCornerShape(18.dp),
                     containerColor = Color(0xFF7C4DFF),
                     contentColor = Color.White,
                     elevation = FloatingActionButtonDefaults.elevation(
                         defaultElevation = 8.dp,
                         pressedElevation = 12.dp
                     ),
-                    modifier = Modifier.padding(end = 12.dp, bottom = 20.dp)
-                )
+                    modifier = Modifier.padding(end = 12.dp, bottom = 80.dp)
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add Habit")
+                }
             }
         }
     ) { contentPadding ->

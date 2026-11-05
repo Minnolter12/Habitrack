@@ -20,6 +20,9 @@ sealed interface Destination {
     data object Settings : Destination
 
     @Serializable
+    data object About : Destination
+
+    @Serializable
     data class AddEditHabit(val habitId: Long? = null) : Destination
 
     @Serializable

@@ -1,5 +1,6 @@
 package com.minnolter.habitrack.ui.screens.detail
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -98,6 +99,8 @@ import kotlin.math.roundToInt
 fun HabitDetailRoute(
     viewModel: HabitDetailViewModel,
     onBack: () -> Unit,
+    fluidOpacity: Float = 1.0f,
+    imageOpacity: Float = 0.35f,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -108,6 +111,8 @@ fun HabitDetailRoute(
 
     HabitDetailScreen(
         uiState = uiState,
+        fluidOpacity = fluidOpacity,
+        imageOpacity = imageOpacity,
         onBack = onBack,
         onFilterSelected = viewModel::onFilterSelected,
         onOffsetSelected = viewModel::onOffsetSelected,
@@ -134,6 +139,8 @@ fun HabitDetailRoute(
 @Composable
 fun HabitDetailScreen(
     uiState: HabitDetailUiState,
+    fluidOpacity: Float = 1.0f,
+    imageOpacity: Float = 0.35f,
     onBack: () -> Unit,
     onFilterSelected: (TimeRange) -> Unit,
     onOffsetSelected: (Int) -> Unit = {},
@@ -241,7 +248,12 @@ fun HabitDetailScreen(
                 contentPadding = PaddingValues(bottom = 96.dp)
             ) {
                 item(key = "hero") {
-                    HeroHeader(uiState = uiState, accentColor = accentColor)
+                    HeroHeader(
+                        uiState = uiState,
+                        accentColor = accentColor,
+                        fluidOpacity = fluidOpacity,
+                        imageOpacity = imageOpacity
+                    )
                 }
 
                 item(key = "histogram_section") {
@@ -304,7 +316,12 @@ fun HabitDetailScreen(
 }
 
 @Composable
-private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
+private fun HeroHeader(
+    uiState: HabitDetailUiState,
+    accentColor: Color,
+    fluidOpacity: Float = 1.0f,
+    imageOpacity: Float = 0.35f
+) {
     val isMaster = uiState.stage == ProgressionStage.MASTER
     val hasBackgroundImage = !uiState.imageUri.isNullOrBlank()
 
@@ -330,7 +347,7 @@ private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
                     AsyncImage(
                         model = uiState.imageUri,
                         contentDescription = null,
-                        alpha = 0.35f,
+                        alpha = imageOpacity,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -353,6 +370,7 @@ private fun HeroHeader(uiState: HabitDetailUiState, accentColor: Color) {
                 visualProgress = uiState.visualProgress,
                 stageColor = accentColor,
                 isMasterStage = isMaster,
+                fluidOpacity = fluidOpacity,
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -517,9 +535,8 @@ private fun PerformanceAnalyticsSection(uiState: HabitDetailUiState) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         FullWidthStatRow(
-            title = "Projected Master Date (10,000h)",
-            value = uiState.projectedMasterDate,
-            subtitle = "Pace: ${String.format(Locale.US, "%.1f hrs/wk", uiState.weeklyVelocityHours)}"
+            title = "Projected Master Date",
+            value = uiState.projectedMasterDate
         )
 
         FullWidthStatRow(
@@ -530,8 +547,7 @@ private fun PerformanceAnalyticsSection(uiState: HabitDetailUiState) {
 
         FullWidthStatRow(
             title = "Best Practice Day",
-            value = uiState.bestPracticeDayOfWeek,
-            subtitle = "Highest duration logged"
+            value = uiState.bestPracticeDayOfWeek
         )
 
         Row(
@@ -868,38 +884,40 @@ private fun CollapsibleRecentSessions(
                 )
             }
 
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                if (sessions.isEmpty()) {
-                    Text(
-                        text = "No sessions logged yet.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.6f)
-                    )
-                } else {
-                    val displayedSessions = sessions.take(visibleCount)
-                    displayedSessions.forEach { session ->
-                        SessionRow(
-                            session = session,
-                            onClick = { onSessionClick(session.id) },
-                            onDelete = { onSessionDelete(session.id) }
+            AnimatedVisibility(visible = expanded) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (sessions.isEmpty()) {
+                        Text(
+                            text = "No sessions logged yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.6f)
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                    }
-
-                    if (visibleCount < sessions.size) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        OutlinedButton(
-                            onClick = { visibleCount += 20 },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
-                        ) {
-                            Text(
-                                text = "Load More (${sessions.size - visibleCount} remaining)",
-                                color = Color(0xFF00E5FF),
-                                fontWeight = FontWeight.SemiBold
+                    } else {
+                        val displayedSessions = sessions.take(visibleCount)
+                        displayedSessions.forEach { session ->
+                            SessionRow(
+                                session = session,
+                                onClick = { onSessionClick(session.id) },
+                                onDelete = { onSessionDelete(session.id) }
                             )
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+
+                        if (visibleCount < sessions.size) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = { visibleCount += 20 },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                            ) {
+                                Text(
+                                    text = "Load More (${sessions.size - visibleCount} remaining)",
+                                    color = Color(0xFF00E5FF),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }

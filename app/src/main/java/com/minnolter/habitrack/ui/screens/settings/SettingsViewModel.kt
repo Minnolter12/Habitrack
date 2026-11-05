@@ -51,7 +51,14 @@ class SettingsViewModel(
 
     fun signInWithGoogle(activityContext: Context) {
         viewModelScope.launch {
-            authManager.signInWithGoogle(activityContext)
+            authManager.signInWithGoogle(activityContext).fold(
+                onSuccess = { user ->
+                    _backupState.value = BackupOperationState.ExportSucceeded("Signed in as ${user.displayName ?: user.email}")
+                },
+                onFailure = { error ->
+                    _backupState.value = BackupOperationState.Failed(error.message ?: "Google Sign-In failed.")
+                }
+            )
         }
     }
 

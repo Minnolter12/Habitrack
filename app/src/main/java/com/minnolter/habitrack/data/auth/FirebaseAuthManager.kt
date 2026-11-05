@@ -47,11 +47,19 @@ class FirebaseAuthManager(
 
     val currentUser: FirebaseUser? get() = runCatching { firebaseAuth.currentUser }.getOrNull()
 
+    private fun getWebClientId(): String {
+        return runCatching {
+            val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+            if (resId != 0) context.getString(resId) else webClientId
+        }.getOrDefault(webClientId)
+    }
+
     suspend fun signInWithGoogle(activityContext: Context): Result<AuthUserState> {
         return runCatching {
+            val clientId = getWebClientId()
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(webClientId)
+                .setServerClientId(clientId)
                 .setAutoSelectEnabled(false)
                 .build()
 
