@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "435617383609",
+    "project_id": "habitrack-d7b41",
+    "storage_bucket": "habitrack-d7b41.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:435617383609:android:33ef5331f069403013c768",
+        "android_client_info": {
+          "package_name": "com.minnolter.habitrack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCamFRYaN4ol6XphVVr-GMUaG1PEszYC9k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

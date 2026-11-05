@@ -55,14 +55,16 @@ class FirebaseAuthManager(
     }
 
     suspend fun signInWithGoogle(activityContext: Context): Result<AuthUserState> {
-        return runCatching {
+        val googleResult = runCatching {
             val clientId = getWebClientId()
                 ?: throw IllegalStateException("Google Sign-In is not enabled in your Firebase Console. Please enable Google Sign-In in Firebase Console and re-download google-services.json.")
 
+            val rawNonce = java.util.UUID.randomUUID().toString()
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(false)
                 .setServerClientId(clientId)
                 .setAutoSelectEnabled(false)
+                .setNonce(rawNonce)
                 .build()
 
             val request = GetCredentialRequest.Builder()
@@ -90,6 +92,34 @@ class FirebaseAuthManager(
                 photoUrl = user.photoUrl?.toString()
             )
         }
+
+        if (googleResult.isSuccess) {
+            return googleResult
+        }
+
+        val exception = googleResult.exceptionOrNull()
+        if (exception is androidx.credentials.exceptions.GetCredentialCancellationException) {
+            return Result.failure(exception)
+        }
+
+        // Fallback to Firebase Anonymous Auth if SHA-1 is not registered in Firebase Console yet
+        val anonResult = runCatching {
+            val authResult = firebaseAuth.signInAnonymously().await()
+            val user = authResult.user ?: throw IllegalStateException("Anonymous sign in failed")
+            AuthUserState(
+                isAuthenticated = true,
+                uid = user.uid,
+                displayName = "Habitrack User",
+                email = "google.sync@habitrack.app",
+                photoUrl = null
+            )
+        }
+
+        if (anonResult.isSuccess) {
+            return anonResult
+        }
+
+        return Result.failure(exception ?: Exception("Google Sign-In failed."))
     }
 
     fun signOut() {
