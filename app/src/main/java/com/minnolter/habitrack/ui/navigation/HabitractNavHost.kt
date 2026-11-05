@@ -76,45 +76,41 @@ private fun AnimatedContentTransitionScope<*>.backwardExit(): ExitTransition =
         animationSpec = tween(NAV_TRANSITION_MS)
     ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
 
+private const val CARD_ZOOM_TRANSITION_MS = 600
+
 private fun AnimatedContentTransitionScope<*>.homeExitToDetail(): ExitTransition =
     scaleOut(
-        targetScale = 0.88f,
+        targetScale = 0.82f,
         transformOrigin = TransformOrigin.Center,
-        animationSpec = spring(
-            stiffness = Spring.StiffnessLow,
-            dampingRatio = Spring.DampingRatioNoBouncy
-        )
-    ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
+        animationSpec = tween(CARD_ZOOM_TRANSITION_MS)
+    ) + fadeOut(animationSpec = tween(CARD_ZOOM_TRANSITION_MS))
 
 private fun AnimatedContentTransitionScope<*>.homePopEnterFromDetail(): EnterTransition =
     scaleIn(
-        initialScale = 0.88f,
+        initialScale = 0.82f,
         transformOrigin = TransformOrigin.Center,
         animationSpec = spring(
-            stiffness = Spring.StiffnessLow,
-            dampingRatio = Spring.DampingRatioMediumBouncy
+            stiffness = Spring.StiffnessVeryLow,
+            dampingRatio = Spring.DampingRatioLowBouncy
         )
-    ) + fadeIn(animationSpec = tween(NAV_TRANSITION_MS))
+    ) + fadeIn(animationSpec = tween(CARD_ZOOM_TRANSITION_MS))
 
 private fun AnimatedContentTransitionScope<*>.detailEnterFromHome(): EnterTransition =
     scaleIn(
-        initialScale = 0.72f,
+        initialScale = 0.60f,
         transformOrigin = TransformOrigin.Center,
         animationSpec = spring(
-            stiffness = Spring.StiffnessLow,
-            dampingRatio = Spring.DampingRatioMediumBouncy
+            stiffness = Spring.StiffnessVeryLow,
+            dampingRatio = Spring.DampingRatioLowBouncy
         )
-    ) + fadeIn(animationSpec = tween(NAV_TRANSITION_MS))
+    ) + fadeIn(animationSpec = tween(CARD_ZOOM_TRANSITION_MS))
 
 private fun AnimatedContentTransitionScope<*>.detailPopExitToHome(): ExitTransition =
     scaleOut(
-        targetScale = 0.72f,
+        targetScale = 0.60f,
         transformOrigin = TransformOrigin.Center,
-        animationSpec = spring(
-            stiffness = Spring.StiffnessLow,
-            dampingRatio = Spring.DampingRatioNoBouncy
-        )
-    ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
+        animationSpec = tween(CARD_ZOOM_TRANSITION_MS)
+    ) + fadeOut(animationSpec = tween(CARD_ZOOM_TRANSITION_MS))
 
 @Composable
 fun HabitractNavHost(

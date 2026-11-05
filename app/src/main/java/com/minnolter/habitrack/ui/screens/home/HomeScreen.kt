@@ -154,20 +154,12 @@ fun HomeScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         } else {
-                            Column {
-                                Text(
-                                    text = "Habitrack",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Time shapes you.",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.55f)
-                                )
-                            }
+                            Text(
+                                text = "Habitrack",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
                         }
                     },
                     navigationIcon = {
