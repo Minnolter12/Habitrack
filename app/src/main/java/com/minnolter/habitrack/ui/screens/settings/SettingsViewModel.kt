@@ -49,6 +49,23 @@ class SettingsViewModel(
     private val _backupState = MutableStateFlow<BackupOperationState>(BackupOperationState.Idle)
     val backupState: StateFlow<BackupOperationState> = _backupState.asStateFlow()
 
+    fun getGoogleSignInIntent(): android.content.Intent {
+        return authManager.getGoogleSignInIntent()
+    }
+
+    fun handleGoogleSignInResult(intent: android.content.Intent?) {
+        viewModelScope.launch {
+            authManager.handleSignInResult(intent).fold(
+                onSuccess = { user ->
+                    _backupState.value = BackupOperationState.ExportSucceeded("Signed in as ${user.displayName ?: user.email}")
+                },
+                onFailure = { error ->
+                    _backupState.value = BackupOperationState.Failed(error.message ?: "Google Sign-In failed.")
+                }
+            )
+        }
+    }
+
     fun signInWithGoogle(activityContext: Context) {
         viewModelScope.launch {
             authManager.signInWithGoogle(activityContext).fold(

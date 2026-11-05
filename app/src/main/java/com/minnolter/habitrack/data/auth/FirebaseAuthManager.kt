@@ -1,8 +1,12 @@
 package com.minnolter.habitrack.data.auth
 
 import android.content.Context
+import android.content.Intent
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
@@ -47,17 +51,53 @@ class FirebaseAuthManager(
 
     val currentUser: FirebaseUser? get() = runCatching { firebaseAuth.currentUser }.getOrNull()
 
-    private fun getWebClientId(): String? {
+    fun getWebClientId(): String? {
         return runCatching {
             val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
             if (resId != 0) context.getString(resId) else null
         }.getOrNull()
     }
 
+    fun getGoogleSignInIntent(): Intent {
+        val clientId = getWebClientId()
+            ?: throw IllegalStateException("Google Sign-In is not enabled in your Firebase Console.")
+
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(clientId)
+            .requestEmail()
+            .build()
+
+        val client = GoogleSignIn.getClient(context, gso)
+        return client.signInIntent
+    }
+
+    suspend fun handleSignInResult(intent: Intent?): Result<AuthUserState> {
+        return runCatching {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(intent)
+            val account = task.getResult(ApiException::class.java)
+                ?: throw IllegalStateException("Google Sign-In returned null account.")
+
+            val idToken = account.idToken
+                ?: throw IllegalStateException("Google Sign-In returned null idToken.")
+
+            val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = firebaseAuth.signInWithCredential(firebaseCredential).await()
+            val user = authResult.user ?: throw IllegalStateException("Firebase sign in returned null user")
+
+            AuthUserState(
+                isAuthenticated = true,
+                uid = user.uid,
+                displayName = user.displayName ?: user.email?.substringBefore("@"),
+                email = user.email,
+                photoUrl = user.photoUrl?.toString()
+            )
+        }
+    }
+
     suspend fun signInWithGoogle(activityContext: Context): Result<AuthUserState> {
         val googleResult = runCatching {
             val clientId = getWebClientId()
-                ?: throw IllegalStateException("Google Sign-In is not enabled in your Firebase Console. Please enable Google Sign-In in Firebase Console and re-download google-services.json.")
+                ?: throw IllegalStateException("Google Sign-In is not enabled in your Firebase Console.")
 
             val rawNonce = java.util.UUID.randomUUID().toString()
             val googleIdOption = GetGoogleIdOption.Builder()
@@ -93,36 +133,20 @@ class FirebaseAuthManager(
             )
         }
 
-        if (googleResult.isSuccess) {
-            return googleResult
-        }
-
-        val exception = googleResult.exceptionOrNull()
-        if (exception is androidx.credentials.exceptions.GetCredentialCancellationException) {
-            return Result.failure(exception)
-        }
-
-        // Fallback to Firebase Anonymous Auth if SHA-1 is not registered in Firebase Console yet
-        val anonResult = runCatching {
-            val authResult = firebaseAuth.signInAnonymously().await()
-            val user = authResult.user ?: throw IllegalStateException("Anonymous sign in failed")
-            AuthUserState(
-                isAuthenticated = true,
-                uid = user.uid,
-                displayName = "Habitrack User",
-                email = "google.sync@habitrack.app",
-                photoUrl = null
-            )
-        }
-
-        if (anonResult.isSuccess) {
-            return anonResult
-        }
-
-        return Result.failure(exception ?: Exception("Google Sign-In failed."))
+        return googleResult
     }
 
     fun signOut() {
-        runCatching { firebaseAuth.signOut() }
+        runCatching {
+            firebaseAuth.signOut()
+            val clientId = getWebClientId()
+            if (clientId != null) {
+                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestIdToken(clientId)
+                    .requestEmail()
+                    .build()
+                GoogleSignIn.getClient(context, gso).signOut()
+            }
+        }
     }
 }

@@ -86,6 +86,21 @@ fun SettingsRoute(
         }
     }
 
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        viewModel.handleGoogleSignInResult(result.data)
+    }
+
+    val onSignInClick: () -> Unit = {
+        runCatching {
+            val intent = viewModel.getGoogleSignInIntent()
+            googleSignInLauncher.launch(intent)
+        }.onFailure {
+            viewModel.signInWithGoogle(context)
+        }
+    }
+
     SettingsScreen(
         settings = settings,
         authState = authState,
@@ -93,7 +108,7 @@ fun SettingsRoute(
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onAboutClick = onAboutClick,
-        onSignInWithGoogleClick = { viewModel.signInWithGoogle(context) },
+        onSignInWithGoogleClick = onSignInClick,
         onSignOutClick = viewModel::signOut,
         onFeedbackEnabledChanged = viewModel::setFeedbackEnabled,
         onFluidOpacityChanged = viewModel::setFluidOpacity,
