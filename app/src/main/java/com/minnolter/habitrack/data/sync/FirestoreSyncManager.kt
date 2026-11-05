@@ -47,6 +47,26 @@ class FirestoreSyncManager(
                             .document(habit.id.toString())
                             .set(habitMap, SetOptions.merge())
                     }
+
+                    // Sync sessions for each habit
+                    repository.observeSessions(habit.id).collectLatest { sessions ->
+                        sessions.forEach { session ->
+                            val sessionMap = mapOf(
+                                "id" to session.id,
+                                "habitId" to session.habitId,
+                                "durationMinutes" to session.durationMinutes,
+                                "timestamp" to session.timestamp.toEpochMilli(),
+                                "note" to session.note
+                            )
+                            runCatching {
+                                db.collection("users")
+                                    .document(userId)
+                                    .collection("sessions")
+                                    .document(session.id.toString())
+                                    .set(sessionMap, SetOptions.merge())
+                            }
+                        }
+                    }
                 }
             }
         }
