@@ -1,6 +1,5 @@
 package com.minnolter.habitrack.ui.navigation
 
-import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -11,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -30,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -67,33 +66,28 @@ fun TranslucentPillNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .padding(horizontal = 28.dp, vertical = 10.dp)
             .navigationBarsPadding(),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier
                 .shadow(
-                    elevation = 16.dp,
+                    elevation = 20.dp,
                     shape = CircleShape,
-                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                    ambientColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-                )
-                .then(
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        Modifier.blur(16.dp)
-                    } else Modifier
+                    spotColor = Color(0xFF7C4DFF).copy(alpha = 0.40f),
+                    ambientColor = Color.Black.copy(alpha = 0.50f)
                 ),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f),
+            color = Color(0xE61B1822),
             border = BorderStroke(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                color = Color.White.copy(alpha = 0.15f)
             )
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEach { item ->
@@ -121,7 +115,7 @@ private fun TranslucentPillNavItem(
 ) {
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+            Color(0x337C4DFF)
         } else {
             Color.Transparent
         },
@@ -131,9 +125,9 @@ private fun TranslucentPillNavItem(
 
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.onPrimaryContainer
+            Color(0xFF00E5FF)
         } else {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            Color.White.copy(alpha = 0.60f)
         },
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "nav_item_content_color"
@@ -143,12 +137,20 @@ private fun TranslucentPillNavItem(
         modifier = modifier
             .clip(CircleShape)
             .background(backgroundColor)
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f)),
+                        shape = CircleShape
+                    )
+                } else Modifier
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick
             )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -171,8 +173,8 @@ private fun TranslucentPillNavItem(
                     text = item.label,
                     color = contentColor,
                     style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
                     ),
                     maxLines = 1
                 )

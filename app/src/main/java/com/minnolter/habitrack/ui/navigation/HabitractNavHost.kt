@@ -81,23 +81,25 @@ fun HabitractNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
 
+    val isHome = currentDestination?.contains("Home") == true
+    val isSettings = currentDestination?.contains("Settings") == true
+    val showBottomBar = isHome || isSettings
+    val activeRoute = if (isHome) "home" else if (isSettings) "settings" else null
+
     val navItems = listOf(
         NavItem(
-            route = Destination.Home::class.qualifiedName ?: "home",
+            route = "home",
             label = "Home",
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home
         ),
         NavItem(
-            route = Destination.Settings::class.qualifiedName ?: "settings",
+            route = "settings",
             label = "Settings",
             selectedIcon = Icons.Filled.Settings,
             unselectedIcon = Icons.Outlined.Settings
         )
     )
-
-    val showBottomBar = currentDestination == Destination.Home::class.qualifiedName ||
-            currentDestination == Destination.Settings::class.qualifiedName
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -201,13 +203,13 @@ fun HabitractNavHost(
         if (showBottomBar) {
             TranslucentPillNavigationBar(
                 items = navItems,
-                currentRoute = currentDestination,
+                currentRoute = activeRoute,
                 onItemSelected = { item ->
-                    if (item.route == Destination.Home::class.qualifiedName) {
+                    if (item.route == "home") {
                         navController.navigate(Destination.Home) {
                             popUpTo(Destination.Home) { inclusive = true }
                         }
-                    } else if (item.route == Destination.Settings::class.qualifiedName) {
+                    } else if (item.route == "settings") {
                         navController.navigate(Destination.Settings) {
                             popUpTo(Destination.Home)
                         }
