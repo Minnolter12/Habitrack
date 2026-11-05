@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "435617383609-e1flp3lcefgu22nc53imvl6kqrujheun.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.minnolter.habitrack",
+            "certificate_hash": "870066602f6cce7ecddb514328bdcf8d38170bbf"
+          }
+        },
+        {
           "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -42,6 +50,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "435617383609-e1flp3lcefgu22nc53imvl6kqrujheun.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.minnolter.habitrack.nightly",
+            "certificate_hash": "870066602f6cce7ecddb514328bdcf8d38170bbf"
+          }
+        },
         {
           "client_id": "435617383609-ofspmdpr58r4to6nr3eruo4938uj9it6.apps.googleusercontent.com",
           "client_type": 3
