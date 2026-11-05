@@ -2,6 +2,7 @@ package com.minnolter.habitrack.ui.screens.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +19,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -47,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -144,13 +149,14 @@ fun SettingsScreen(
     val backupInProgress = backupState is BackupOperationState.InProgress
     var showResetDialog1 by remember { mutableStateOf(false) }
     var showResetDialog2 by remember { mutableStateOf(false) }
+    var opacityExpanded by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.SemiBold, color = Color.White) },
+                title = { Text("Settings", fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -165,17 +171,17 @@ fun SettingsScreen(
             modifier = Modifier
                 .padding(contentPadding)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // 1. Floating Sign in with Google Card
             item {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0x14FFFFFF),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color(0x1AFFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                 ) {
                     if (authState.isAuthenticated) {
                         ListItem(
@@ -214,7 +220,7 @@ fun SettingsScreen(
                                     containerColor = Color(0xFF7C4DFF),
                                     contentColor = Color.White
                                 ),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(14.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("Sign in with Google", fontWeight = FontWeight.Bold)
@@ -229,10 +235,10 @@ fun SettingsScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0x14FFFFFF),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color(0x1AFFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                 ) {
                     ListItem(
                         headlineContent = { Text("Sound & haptic feedback", color = Color.White, fontWeight = FontWeight.Medium) },
@@ -249,77 +255,108 @@ fun SettingsScreen(
                 }
             }
 
-            // 3. Floating Opacity Customization Card
+            // 3. Expandable Card Opacity & Customization Card
             item {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0x14FFFFFF),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color(0x1AFFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { opacityExpanded = !opacityExpanded }
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Card Fluid Fill Opacity", color = Color.White, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                text = "${(settings.fluidOpacity * 100).toInt()}%",
-                                color = Color(0xFF00E5FF),
-                                fontWeight = FontWeight.Bold
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(Icons.Filled.Opacity, contentDescription = null, tint = Color(0xFF00E5FF))
+                                Text(
+                                    text = "Card Opacity & Customization",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                            }
+                            Icon(
+                                imageVector = if (opacityExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                contentDescription = if (opacityExpanded) "Collapse" else "Expand",
+                                tint = Color.White.copy(alpha = 0.8f)
                             )
                         }
-                        Slider(
-                            value = settings.fluidOpacity,
-                            onValueChange = onFluidOpacityChanged,
-                            valueRange = 0f..1f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color(0xFF00E5FF),
-                                activeTrackColor = Color(0xFF00E5FF)
-                            ),
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        AnimatedVisibility(visible = opacityExpanded) {
+                            Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Card Fluid Fill Opacity", color = Color.White, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = "${(settings.fluidOpacity * 100).toInt()}%",
+                                        color = Color(0xFF00E5FF),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Slider(
+                                    value = settings.fluidOpacity,
+                                    onValueChange = onFluidOpacityChanged,
+                                    valueRange = 0f..1f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color(0xFF00E5FF),
+                                        activeTrackColor = Color(0xFF00E5FF)
+                                    ),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Card Background Image Opacity", color = Color.White, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                text = "${(settings.imageOpacity * 100).toInt()}%",
-                                color = Color(0xFF00E5FF),
-                                fontWeight = FontWeight.Bold
-                            )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Card Background Image Opacity", color = Color.White, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        text = "${(settings.imageOpacity * 100).toInt()}%",
+                                        color = Color(0xFF00E5FF),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Slider(
+                                    value = settings.imageOpacity,
+                                    onValueChange = onImageOpacityChanged,
+                                    valueRange = 0f..1f,
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color(0xFF00E5FF),
+                                        activeTrackColor = Color(0xFF00E5FF)
+                                    ),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
                         }
-                        Slider(
-                            value = settings.imageOpacity,
-                            onValueChange = onImageOpacityChanged,
-                            valueRange = 0f..1f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color(0xFF00E5FF),
-                                activeTrackColor = Color(0xFF00E5FF)
-                            ),
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
                     }
                 }
             }
 
-            // 4. Reset Entire App
+            // 4. Reset Entire App Card
             item {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0x14FFFFFF),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color(0x1AFFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                 ) {
                     ListItem(
                         headlineContent = { Text("Reset Entire App", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold) },
@@ -331,19 +368,19 @@ fun SettingsScreen(
                 }
             }
 
-            // 5. About Screen Navigation
+            // 5. About Card
             item {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0x14FFFFFF),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color(0x1AFFFFFF),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                 ) {
                     ListItem(
-                        headlineContent = { Text("About Habitrack", color = Color.White, fontWeight = FontWeight.SemiBold) },
-                        supportingContent = { Text("v0.5.0 • Developed by minnolter12 (Dev Madhav)", color = Color.White.copy(alpha = 0.70f)) },
+                        headlineContent = { Text("About", color = Color.White, fontWeight = FontWeight.Bold) },
+                        supportingContent = { Text("Habitrack • Developed by minnolter12", color = Color.White.copy(alpha = 0.70f)) },
                         leadingContent = { Icon(Icons.Filled.Info, contentDescription = null, tint = Color(0xFF00E5FF)) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable(onClick = onAboutClick)

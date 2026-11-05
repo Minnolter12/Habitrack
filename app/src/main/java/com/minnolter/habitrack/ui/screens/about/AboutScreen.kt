@@ -63,7 +63,7 @@ fun AboutScreen(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("About Habitrack", fontWeight = FontWeight.Bold, color = Color.White) },
+                title = { Text("About", fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -81,21 +81,21 @@ fun AboutScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                color = Color(0x14FFFFFF),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                color = Color(0x1AFFFFFF),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(80.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF7C4DFF)),
                         contentAlignment = Alignment.Center
@@ -103,7 +103,7 @@ fun AboutScreen(
                         Text("🦉", style = MaterialTheme.typography.headlineLarge)
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     Text(
                         text = "Habitrack",
@@ -113,18 +113,11 @@ fun AboutScreen(
                     )
 
                     Text(
-                        text = "Version 0.5.0",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF00E5FF),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-
-                    Text(
                         text = "Time shapes you.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.60f),
-                        modifier = Modifier.padding(top = 6.dp)
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFF00E5FF),
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -132,8 +125,8 @@ fun AboutScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Crafted by minnolter12 (Dev Madhav)",
-                        style = MaterialTheme.typography.titleSmall,
+                        text = "Developed by minnolter12",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         textAlign = TextAlign.Center
@@ -168,29 +161,6 @@ fun AboutScreen(
                         )
                         Text("Visit GitHub (minnolter12)", fontWeight = FontWeight.Bold)
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                color = Color(0x10FFFFFF),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f))
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "✨ Key Principles",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF00E5FF)
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text("• 100% Offline-First & Private", color = Color.White, style = MaterialTheme.typography.bodySmall)
-                    Text("• Optional Google Cloud Sync", color = Color.White, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-                    Text("• 10,000-Hour Rule Progression Engine", color = Color.White, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-                    Text("• Smart Home Screen Widget & Reminders", color = Color.White, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
