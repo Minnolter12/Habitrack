@@ -76,9 +76,19 @@ private fun AnimatedContentTransitionScope<*>.backwardExit(): ExitTransition =
         animationSpec = tween(NAV_TRANSITION_MS)
     ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
 
-private fun AnimatedContentTransitionScope<*>.cardZoomEnter(): EnterTransition =
+private fun AnimatedContentTransitionScope<*>.homeExitToDetail(): ExitTransition =
+    scaleOut(
+        targetScale = 0.88f,
+        transformOrigin = TransformOrigin.Center,
+        animationSpec = spring(
+            stiffness = Spring.StiffnessLow,
+            dampingRatio = Spring.DampingRatioNoBouncy
+        )
+    ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
+
+private fun AnimatedContentTransitionScope<*>.homePopEnterFromDetail(): EnterTransition =
     scaleIn(
-        initialScale = 0.82f,
+        initialScale = 0.88f,
         transformOrigin = TransformOrigin.Center,
         animationSpec = spring(
             stiffness = Spring.StiffnessLow,
@@ -86,23 +96,19 @@ private fun AnimatedContentTransitionScope<*>.cardZoomEnter(): EnterTransition =
         )
     ) + fadeIn(animationSpec = tween(NAV_TRANSITION_MS))
 
-private fun AnimatedContentTransitionScope<*>.cardZoomExit(): ExitTransition =
-    scaleOut(
-        targetScale = 0.90f,
-        transformOrigin = TransformOrigin.Center,
-        animationSpec = tween(NAV_TRANSITION_MS)
-    ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
-
-private fun AnimatedContentTransitionScope<*>.cardZoomPopEnter(): EnterTransition =
+private fun AnimatedContentTransitionScope<*>.detailEnterFromHome(): EnterTransition =
     scaleIn(
-        initialScale = 0.90f,
+        initialScale = 0.72f,
         transformOrigin = TransformOrigin.Center,
-        animationSpec = tween(NAV_TRANSITION_MS)
+        animationSpec = spring(
+            stiffness = Spring.StiffnessLow,
+            dampingRatio = Spring.DampingRatioMediumBouncy
+        )
     ) + fadeIn(animationSpec = tween(NAV_TRANSITION_MS))
 
-private fun AnimatedContentTransitionScope<*>.cardZoomPopExit(): ExitTransition =
+private fun AnimatedContentTransitionScope<*>.detailPopExitToHome(): ExitTransition =
     scaleOut(
-        targetScale = 0.82f,
+        targetScale = 0.72f,
         transformOrigin = TransformOrigin.Center,
         animationSpec = spring(
             stiffness = Spring.StiffnessLow,
@@ -150,7 +156,22 @@ fun HabitractNavHost(
             popEnterTransition = { backwardEnter() },
             popExitTransition = { backwardExit() }
         ) {
-            composable<Destination.Home> { backStackEntry ->
+            composable<Destination.Home>(
+                exitTransition = {
+                    if (targetState.destination.route?.contains("Detail") == true) {
+                        homeExitToDetail()
+                    } else {
+                        forwardExit()
+                    }
+                },
+                popEnterTransition = {
+                    if (initialState.destination.route?.contains("Detail") == true) {
+                        homePopEnterFromDetail()
+                    } else {
+                        backwardEnter()
+                    }
+                }
+            ) { backStackEntry ->
                 val homeViewModel: HomeViewModel = viewModel(
                     viewModelStoreOwner = backStackEntry,
                     factory = HomeViewModelFactory(repository, settingsDataStore)
@@ -191,10 +212,10 @@ fun HabitractNavHost(
             }
 
             composable<Destination.Detail>(
-                enterTransition = { cardZoomEnter() },
-                exitTransition = { cardZoomExit() },
-                popEnterTransition = { cardZoomPopEnter() },
-                popExitTransition = { cardZoomPopExit() }
+                enterTransition = { detailEnterFromHome() },
+                exitTransition = { detailPopExitToHome() },
+                popEnterTransition = { detailEnterFromHome() },
+                popExitTransition = { detailPopExitToHome() }
             ) { backStackEntry ->
                 val destination: Destination.Detail = backStackEntry.toRoute()
 
