@@ -40,13 +40,25 @@ data class ReleaseNoteGroup(
 
 val CUMULATIVE_RELEASE_NOTES: List<ReleaseNoteGroup> = listOf(
     ReleaseNoteGroup(
+        version = "0.6.0",
+        versionCode = 600,
+        title = "v0.6.0 • Translucent Pill Nav & 3D Depth Expansion",
+        items = listOf(
+            "💊 Translucent Pill Bottom Bar: Floating glassmorphic navigation with tactile haptics.",
+            "🌌 3D Card Depth Expansion: Immersive 600ms spring-animated 3D zoom when opening cards.",
+            "🔐 Google Sign-In & Firestore Sync: Real Google Account authentication and cloud sync.",
+            "📱 Squarish FAB: Compact 18dp squarish FAB floating above bottom navigation bar.",
+            "ℹ️ Dedicated About Page: Redesigned About screen with GitHub integration."
+        )
+    ),
+    ReleaseNoteGroup(
         version = "0.5.0",
         versionCode = 500,
-        title = "v0.5.0 • Reminders, Widget & Release Notes",
+        title = "v0.5.0 • Reminders & Smart Widget",
         items = listOf(
             "🦉 Duolingo-style Reminders: Playful daily prompts if you haven't logged practice hours.",
             "📱 Smart Home Screen Widget: Detects your active habit and displays hours invested.",
-            "📋 Dynamic Documentation: Release notes tailored dynamically to your version upgrade path."
+            "📋 Dynamic Release Notes: Tailored documentation based on your upgrade path."
         )
     ),
     ReleaseNoteGroup(

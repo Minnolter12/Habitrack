@@ -94,11 +94,11 @@ fun HomeRoute(
         modifier = modifier
     )
 
-    val showWhatsNew = settings.lastSeenWhatsNewVersion != "0.5.0"
+    val showWhatsNew = settings.lastSeenWhatsNewVersion != "0.6.0"
     if (showWhatsNew) {
         com.minnolter.habitrack.ui.components.WhatsNewSheet(
             lastSeenVersion = settings.lastSeenWhatsNewVersion,
-            onDismiss = { viewModel.dismissWhatsNewSheet("0.5.0") }
+            onDismiss = { viewModel.dismissWhatsNewSheet("0.6.0") }
         )
     }
 
