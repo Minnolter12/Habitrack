@@ -63,6 +63,7 @@ fun HabitCard(
 
     val contentColor = Color.White
     val secondaryContentColor = contentColor.copy(alpha = 0.85f)
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     Box(
         modifier = modifier
@@ -77,8 +78,14 @@ fun HabitCard(
             .clip(shape)
             .background(Color(0xFF1B1822).copy(alpha = 0.75f))
             .combinedClickable(
-                onClick = onTap,
-                onLongClick = onLongPress,
+                onClick = {
+                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    onTap()
+                },
+                onLongClick = {
+                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    onLongPress()
+                },
                 onClickLabel = "Log practice time",
                 onLongClickLabel = "View ${habit.name} statistics"
             )

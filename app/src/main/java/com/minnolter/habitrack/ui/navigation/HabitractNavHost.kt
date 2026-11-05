@@ -44,6 +44,12 @@ import com.minnolter.habitrack.ui.screens.settings.SettingsRoute
 import com.minnolter.habitrack.ui.screens.settings.SettingsViewModel
 import com.minnolter.habitrack.ui.screens.settings.SettingsViewModelFactory
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.ui.graphics.TransformOrigin
+
 private const val NAV_TRANSITION_MS = 300
 
 private fun AnimatedContentTransitionScope<*>.forwardEnter(): EnterTransition =
@@ -68,6 +74,40 @@ private fun AnimatedContentTransitionScope<*>.backwardExit(): ExitTransition =
     slideOutOfContainer(
         AnimatedContentTransitionScope.SlideDirection.End,
         animationSpec = tween(NAV_TRANSITION_MS)
+    ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
+
+private fun AnimatedContentTransitionScope<*>.cardZoomEnter(): EnterTransition =
+    scaleIn(
+        initialScale = 0.82f,
+        transformOrigin = TransformOrigin.Center,
+        animationSpec = spring(
+            stiffness = Spring.StiffnessLow,
+            dampingRatio = Spring.DampingRatioMediumBouncy
+        )
+    ) + fadeIn(animationSpec = tween(NAV_TRANSITION_MS))
+
+private fun AnimatedContentTransitionScope<*>.cardZoomExit(): ExitTransition =
+    scaleOut(
+        targetScale = 0.90f,
+        transformOrigin = TransformOrigin.Center,
+        animationSpec = tween(NAV_TRANSITION_MS)
+    ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
+
+private fun AnimatedContentTransitionScope<*>.cardZoomPopEnter(): EnterTransition =
+    scaleIn(
+        initialScale = 0.90f,
+        transformOrigin = TransformOrigin.Center,
+        animationSpec = tween(NAV_TRANSITION_MS)
+    ) + fadeIn(animationSpec = tween(NAV_TRANSITION_MS))
+
+private fun AnimatedContentTransitionScope<*>.cardZoomPopExit(): ExitTransition =
+    scaleOut(
+        targetScale = 0.82f,
+        transformOrigin = TransformOrigin.Center,
+        animationSpec = spring(
+            stiffness = Spring.StiffnessLow,
+            dampingRatio = Spring.DampingRatioNoBouncy
+        )
     ) + fadeOut(animationSpec = tween(NAV_TRANSITION_MS))
 
 @Composable
@@ -150,7 +190,12 @@ fun HabitractNavHost(
                 )
             }
 
-            composable<Destination.Detail> { backStackEntry ->
+            composable<Destination.Detail>(
+                enterTransition = { cardZoomEnter() },
+                exitTransition = { cardZoomExit() },
+                popEnterTransition = { cardZoomPopEnter() },
+                popExitTransition = { cardZoomPopExit() }
+            ) { backStackEntry ->
                 val destination: Destination.Detail = backStackEntry.toRoute()
 
                 val detailViewModel: HabitDetailViewModel = viewModel(
